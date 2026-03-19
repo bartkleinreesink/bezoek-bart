@@ -1,0 +1,1856 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>🚪 Langskomen bij Bart</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0A0A0A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Bij Bart">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=IBM+Plex+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  /* ══════════════════════════════════════
+     THEME TOKENS — light default
+  ══════════════════════════════════════ */
+  :root {
+    --bg:        #F4F1E8;
+    --bg2:       #E5E1D4;
+    --surface:   #FDFAF2;
+    --ink:       #0E0E0E;
+    --ink2:      #3A3A3A;
+    --ink3:      #5A5A5A;   /* was #888 — now 7.2:1 on --bg */
+    --border:    #0E0E0E;
+    --shadow:    #0E0E0E;
+    --yellow:    #FFE500;
+    --red:       #C8180A;   /* darker red for better contrast on white */
+    --green:     #006B2E;   /* darker green for better contrast on white */
+    --safe-top:    env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* dark theme */
+  [data-theme="dark"] {
+    --bg:        #111111;
+    --bg2:       #202020;
+    --surface:   #1A1A1A;
+    --ink:       #F0EDE4;
+    --ink2:      #C8C4BB;   /* was #BBB — better contrast on dark */
+    --ink3:      #8A8A8A;   /* was #666 — better contrast on #111 */
+    --border:    #F0EDE4;
+    --shadow:    #000000;
+    --yellow:    #FFE500;
+    --red:       #FF4D35;   /* brighter for dark bg */
+    --green:     #00D65A;   /* brighter for dark bg */
+  }
+
+  /* system fallback */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]):not([data-theme="dark"]) {
+      --bg:        #111111;
+      --bg2:       #202020;
+      --surface:   #1A1A1A;
+      --ink:       #F0EDE4;
+      --ink2:      #C8C4BB;
+      --ink3:      #8A8A8A;
+      --border:    #F0EDE4;
+      --shadow:    #000000;
+      --yellow:    #FFE500;
+      --red:       #FF4D35;
+      --green:     #00D65A;
+    }
+  }
+
+  /* ══════════════════════════════════════
+     BASE
+  ══════════════════════════════════════ */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { font-size: 16px; }
+
+  body {
+    background: var(--bg);
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--ink);
+    min-height: 100vh;
+    overflow-x: hidden;
+    padding-top: var(--safe-top);
+    padding-bottom: var(--safe-bottom);
+    transition: background 0.2s, color 0.2s;
+  }
+
+  /* halftone texture */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: radial-gradient(circle, color-mix(in srgb, var(--ink) 6%, transparent) 1px, transparent 1px);
+    background-size: 14px 14px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 0 18px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ══════════════════════════════════════
+     THEME TOGGLE BAR
+  ══════════════════════════════════════ */
+  .theme-bar {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 0 0;
+    margin-bottom: -8px;
+  }
+
+  .theme-btn {
+    background: none;
+    border: 2px solid transparent;
+    padding: 5px 9px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    color: var(--ink3);
+    transition: all 0.12s;
+  }
+  .theme-btn:hover { color: var(--ink); border-color: var(--border); }
+  .theme-btn.active {
+    background: var(--ink);
+    color: var(--bg);
+    border-color: var(--border);
+  }
+
+  /* ══════════════════════════════════════
+     INSTALL BANNER
+  ══════════════════════════════════════ */
+  .install-banner {
+    background: var(--yellow);
+    color: var(--ink);
+    padding: 10px 18px;
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    border-bottom: 3px solid var(--border);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .install-banner.show { display: flex; }
+  .install-banner button {
+    background: var(--ink);
+    color: var(--yellow);
+    border: none;
+    padding: 6px 14px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 700;
+    cursor: pointer;
+    text-transform: uppercase;
+  }
+
+  /* ══════════════════════════════════════
+     HEADER
+  ══════════════════════════════════════ */
+  .header {
+    padding: 28px 0 28px;
+    border-bottom: 4px solid var(--border);
+    margin-bottom: 28px;
+  }
+
+  .door-icon {
+    font-size: 64px;
+    display: block;
+    margin-bottom: 12px;
+    animation: doorWobble 4s ease-in-out infinite;
+    transform-origin: top center;
+  }
+  @keyframes doorWobble {
+    0%, 100% { transform: rotate(-3deg); }
+    50%       { transform: rotate(3deg); }
+  }
+
+  .header h1 {
+    font-family: 'Anton', sans-serif;
+    font-size: clamp(3rem, 13vw, 4.8rem);
+    font-weight: 400;
+    line-height: 0.88;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    color: var(--ink);
+  }
+  .header h1 .accent {
+    color: var(--yellow);
+    -webkit-text-stroke: 2px var(--border);
+    paint-order: stroke fill;
+  }
+
+  .header .tagline {
+    font-size: 0.7rem;
+    color: var(--ink3);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-bottom: 18px;
+    line-height: 1.5;
+  }
+
+  .bart-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--ink);
+    color: var(--bg);
+    padding: 10px 18px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    border: 2px solid var(--border);
+    font-family: 'IBM Plex Mono', monospace;
+    transition: opacity 0.1s;
+  }
+  .bart-status:hover { opacity: 0.8; }
+  .status-dot {
+    width: 8px; height: 8px;
+    background: var(--yellow);
+    flex-shrink: 0;
+    animation: blink 1.8s infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.15} }
+
+  .bart-secret-btn {
+    font-size: 0.62rem;
+    color: var(--ink3);
+    margin-top: 12px;
+    cursor: pointer;
+    text-decoration: underline;
+    background: none;
+    border: none;
+    font-family: 'IBM Plex Mono', monospace;
+    letter-spacing: 0.05em;
+    display: block;
+  }
+  .bart-secret-btn:hover { color: var(--ink2); }
+
+  /* ══════════════════════════════════════
+     SCREENS
+  ══════════════════════════════════════ */
+  .screen { display: none; }
+  .screen.active { display: block; animation: fadeIn 0.2s ease; }
+  @keyframes fadeIn { from {opacity:0;transform:translateY(5px)} to {opacity:1;transform:none} }
+
+  /* ══════════════════════════════════════
+     CARDS
+  ══════════════════════════════════════ */
+  .card {
+    background: var(--surface);
+    border: 3px solid var(--border);
+    padding: 22px 20px;
+    margin-bottom: 20px;
+    box-shadow: 5px 5px 0 var(--shadow);
+  }
+
+  .card-title {
+    font-family: 'Anton', sans-serif;
+    font-size: 1.35rem;
+    font-weight: 400;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    margin-bottom: 18px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--border);
+    color: var(--ink);
+  }
+
+  /* ══════════════════════════════════════
+     NOTIF / SETUP CARD
+  ══════════════════════════════════════ */
+  .notif-perm-card {
+    background: var(--ink);
+    color: var(--bg);
+    border: 3px solid var(--border);
+    padding: 20px;
+    margin-bottom: 20px;
+    display: none;
+    box-shadow: 5px 5px 0 var(--shadow);
+  }
+  .notif-perm-card.show { display: block; }
+  .notif-perm-card h3 {
+    font-family: 'Anton', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 10px;
+    color: var(--bg);
+  }
+  .notif-perm-card p { font-size: 0.76rem; line-height: 1.75; color: #C8C4BB; margin-bottom: 14px; }
+  .notif-perm-card label { color: #8A8A8A; }
+
+  .notif-perm-btn {
+    background: var(--yellow);
+    color: #111;
+    border: none;
+    padding: 13px 20px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    width: 100%;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    transition: opacity 0.1s;
+  }
+  .notif-perm-btn:hover { opacity: 0.85; }
+  .notif-perm-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .notif-status { font-size: 0.68rem; margin-top: 10px; opacity: 0.65; text-align: center; }
+
+  /* ══════════════════════════════════════
+     GOOGLE BTN
+  ══════════════════════════════════════ */
+  .google-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    padding: 15px;
+    background: var(--surface);
+    border: 3px solid var(--border);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    color: var(--ink);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    box-shadow: 5px 5px 0 var(--shadow);
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+  .google-btn:hover  { transform: translate(-2px,-2px); box-shadow: 7px 7px 0 var(--shadow); }
+  .google-btn:active { transform: translate(2px,2px);  box-shadow: 2px 2px 0 var(--shadow); }
+  .google-logo { font-size: 1.2rem; }
+
+  .funny-text {
+    font-size: 0.68rem;
+    color: var(--ink3);
+    text-align: center;
+    margin-top: 14px;
+    line-height: 1.8;
+  }
+
+  /* ══════════════════════════════════════
+     FORM ELEMENTS
+  ══════════════════════════════════════ */
+  label {
+    display: block;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink2);
+    margin-bottom: 6px;
+    font-weight: 700;
+  }
+
+  input, select, textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border: 2px solid var(--border);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.85rem;
+    background: var(--bg2);
+    color: var(--ink);
+    margin-bottom: 16px;
+    outline: none;
+    -webkit-appearance: none;
+    border-radius: 0;
+    transition: box-shadow 0.1s;
+  }
+  input:focus, select:focus, textarea:focus {
+    box-shadow: 3px 3px 0 var(--shadow);
+  }
+  select option { background: var(--bg2); color: var(--ink); }
+
+  .field-group { margin-bottom: 4px; }
+  .inline-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  textarea { resize: vertical; min-height: 80px; line-height: 1.6; }
+
+  /* ══════════════════════════════════════
+     PLUS ONE
+  ══════════════════════════════════════ */
+  .plus-one-section {
+    background: var(--bg2);
+    border: 2px dashed var(--border);
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .plus-one-toggle { display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+  .plus-one-toggle span { font-size: 0.76rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink); }
+  .toggle-btn {
+    background: var(--ink);
+    color: var(--bg);
+    border: 2px solid var(--border);
+    padding: 5px 14px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 700;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .toggle-btn.on { background: var(--green); color: #fff; border-color: var(--green); }
+  .plus-one-fields { margin-top: 14px; display: none; }
+  .plus-one-fields.open { display: block; }
+
+  /* ══════════════════════════════════════
+     SUBMIT
+  ══════════════════════════════════════ */
+  .submit-btn {
+    width: 100%;
+    padding: 17px;
+    background: var(--yellow);
+    color: #111;
+    border: 3px solid var(--border);
+    font-family: 'Anton', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 400;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    box-shadow: 5px 5px 0 var(--shadow);
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+  .submit-btn:hover  { transform: translate(-2px,-2px); box-shadow: 8px 8px 0 var(--shadow); }
+  .submit-btn:active { transform: translate(3px,3px);  box-shadow: 1px 1px 0 var(--shadow); }
+
+  /* ══════════════════════════════════════
+     RULES BOX
+  ══════════════════════════════════════ */
+  .rules-box {
+    background: var(--yellow);
+    border: 3px solid var(--border);
+    padding: 18px 20px;
+    margin-bottom: 20px;
+    font-size: 0.76rem;
+    line-height: 2;
+    color: #111;
+    box-shadow: 5px 5px 0 var(--shadow);
+  }
+  .rules-box strong { display: block; font-size: 0.78rem; margin-bottom: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
+
+  /* ══════════════════════════════════════
+     NAV TABS
+  ══════════════════════════════════════ */
+  .nav-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin-bottom: 20px;
+    border: 3px solid var(--border);
+    overflow: hidden;
+  }
+  .nav-tab {
+    padding: 13px 8px;
+    border: none;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.68rem;
+    font-weight: 700;
+    cursor: pointer;
+    background: var(--surface);
+    color: var(--ink3);
+    transition: all 0.1s;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-right: 2px solid var(--border);
+  }
+  .nav-tab:last-child { border-right: none; }
+  .nav-tab.active { background: var(--ink); color: var(--yellow); }
+
+  /* ══════════════════════════════════════
+     USER PILL
+  ══════════════════════════════════════ */
+  .user-pill {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--ink);
+    color: var(--bg);
+    padding: 8px 16px 8px 8px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin: 0 auto 24px;
+    width: fit-content;
+    border: 2px solid var(--border);
+  }
+  .avatar {
+    width: 30px; height: 30px;
+    background: var(--yellow);
+    color: #111;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+
+  .section-tab { display: none; }
+  .section-tab.active { display: block; animation: fadeIn 0.15s ease; }
+
+  /* ══════════════════════════════════════
+     VISIT ITEMS
+  ══════════════════════════════════════ */
+  .visit-item {
+    border: 2px solid var(--border);
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface);
+    gap: 10px;
+  }
+  .visit-name { font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink); }
+  .visit-time { font-size: 0.68rem; color: var(--ink3); margin-top: 4px; line-height: 1.5; }
+
+  .visit-badge {
+    font-size: 0.62rem;
+    padding: 5px 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border: 2px solid var(--border);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .badge-pending { background: var(--yellow); color: #0E0E0E; border-color: var(--border); }
+  .badge-yes     { background: #006B2E; color: #FFFFFF; border-color: #006B2E; }
+  .badge-no      { background: #C8180A; color: #FFFFFF; border-color: #C8180A; }
+
+  [data-theme="dark"] .badge-yes { background: #00D65A; color: #0E0E0E; border-color: #00D65A; }
+  [data-theme="dark"] .badge-no  { background: #FF4D35; color: #0E0E0E; border-color: #FF4D35; }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]):not([data-theme="dark"]) .badge-yes { background: #00D65A; color: #0E0E0E; border-color: #00D65A; }
+    :root:not([data-theme="light"]):not([data-theme="dark"]) .badge-no  { background: #FF4D35; color: #0E0E0E; border-color: #FF4D35; }
+  }
+
+  /* ══════════════════════════════════════
+     MODAL OVERLAY
+  ══════════════════════════════════════ */
+  .notification-overlay {
+    position: fixed;
+    inset: 0;
+    background: color-mix(in srgb, var(--shadow) 80%, transparent);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: fadeIn 0.2s ease;
+  }
+  .notification-overlay.hidden { display: none; }
+
+  .notification-card {
+    background: var(--surface);
+    border: 4px solid var(--border);
+    padding: 30px 24px;
+    max-width: 400px;
+    width: 100%;
+    box-shadow: 10px 10px 0 var(--shadow);
+    text-align: center;
+    animation: popIn 0.25s cubic-bezier(0.34, 1.4, 0.64, 1);
+  }
+  @keyframes popIn {
+    from { transform: scale(0.82) translateY(16px); opacity: 0; }
+    to   { transform: scale(1) translateY(0); opacity: 1; }
+  }
+
+  .notif-emoji  { font-size: 52px; display: block; margin-bottom: 12px; }
+  .notif-title  {
+    font-family: 'Anton', sans-serif;
+    font-size: 1.7rem;
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    margin-bottom: 10px;
+    line-height: 1;
+    color: var(--ink);
+  }
+  .notif-body { font-size: 0.78rem; color: var(--ink2); line-height: 1.85; margin-bottom: 22px; }
+  .notif-visitor-name {
+    display: inline-block;
+    background: var(--yellow);
+    color: #111;
+    padding: 3px 12px;
+    font-weight: 700;
+    font-size: 0.88rem;
+    margin: 4px 0 8px;
+    border: 2px solid var(--border);
+  }
+  .notif-time-badge {
+    display: inline-block;
+    background: var(--ink);
+    color: var(--bg);
+    padding: 5px 14px;
+    font-size: 0.74rem;
+    margin-bottom: 8px;
+  }
+  .notif-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+
+  .btn-yes {
+    padding: 14px;
+    background: #006B2E;
+    color: #FFFFFF;
+    border: 3px solid var(--border);
+    font-family: 'Anton', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 400;
+    cursor: pointer;
+    text-transform: uppercase;
+    box-shadow: 4px 4px 0 var(--shadow);
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+  .btn-yes:hover  { transform: translate(-1px,-1px); box-shadow: 6px 6px 0 var(--shadow); }
+  .btn-yes:active { transform: translate(2px,2px);  box-shadow: 1px 1px 0 var(--shadow); }
+
+  .btn-no {
+    padding: 14px;
+    background: #C8180A;
+    color: #FFFFFF;
+    border: 3px solid var(--border);
+    font-family: 'Anton', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 400;
+    cursor: pointer;
+    text-transform: uppercase;
+    box-shadow: 4px 4px 0 var(--shadow);
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+  .btn-no:hover  { transform: translate(-1px,-1px); box-shadow: 6px 6px 0 var(--shadow); }
+  .btn-no:active { transform: translate(2px,2px);  box-shadow: 1px 1px 0 var(--shadow); }
+
+  [data-theme="dark"] .btn-yes { background: #00D65A; color: #0E0E0E; }
+  [data-theme="dark"] .btn-no  { background: #FF4D35; color: #0E0E0E; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]):not([data-theme="dark"]) .btn-yes { background: #00D65A; color: #0E0E0E; }
+    :root:not([data-theme="light"]):not([data-theme="dark"]) .btn-no  { background: #FF4D35; color: #0E0E0E; }
+  }
+
+  .response-emoji { font-size: 60px; display: block; margin-bottom: 12px; }
+  .response-title {
+    font-family: 'Anton', sans-serif;
+    font-size: 2rem;
+    font-weight: 400;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    line-height: 1;
+    color: var(--ink);
+  }
+  .response-sub { font-size: 0.78rem; color: var(--ink2); line-height: 1.75; }
+
+  /* ══════════════════════════════════════
+     EMPTY STATE
+  ══════════════════════════════════════ */
+  .empty-state {
+    text-align: center;
+    padding: 36px 16px;
+    color: var(--ink3);
+    font-size: 0.76rem;
+    line-height: 1.9;
+    border: 2px dashed var(--ink3);
+  }
+  .empty-state span { font-size: 2.5rem; display: block; margin-bottom: 12px; }
+
+  /* ══════════════════════════════════════
+     PIN MODAL
+  ══════════════════════════════════════ */
+  .pin-dot {
+    width: 14px; height: 14px;
+    border: 2px solid var(--border);
+    background: transparent;
+    transition: background 0.1s;
+  }
+  .pin-dot.filled { background: var(--ink); }
+  .pin-dot.error  { background: var(--red); border-color: var(--red); }
+  .pin-dot.ok     { background: var(--green); border-color: var(--green); }
+
+  .pin-key {
+    padding: 16px 8px;
+    background: var(--bg2);
+    border: 2px solid var(--border);
+    font-family: 'Anton', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 400;
+    cursor: pointer;
+    color: var(--ink);
+    transition: transform 0.08s, background 0.08s;
+    box-shadow: 3px 3px 0 var(--shadow);
+  }
+  .pin-key:hover  { background: var(--surface); }
+  .pin-key:active { transform: translate(2px,2px); box-shadow: none; }
+  .pin-key--cancel { background: var(--bg2); color: var(--ink3); font-family: 'IBM Plex Mono', monospace; font-size: 1rem; }
+  .pin-key--del    { font-family: 'IBM Plex Mono', monospace; font-size: 1rem; }
+
+  @keyframes pinShake {
+    0%,100% { transform: translateX(0); }
+    20%      { transform: translateX(-8px); }
+    40%      { transform: translateX(8px); }
+    60%      { transform: translateX(-5px); }
+    80%      { transform: translateX(5px); }
+  }
+  .pin-shake { animation: pinShake 0.4s ease; }
+  #calendarCheck {
+    font-size: 0.78rem !important;
+    line-height: 1.7 !important;
+    border-width: 2px !important;
+    border-style: solid !important;
+  }
+
+  /* ══════════════════════════════════════
+     CONFETTI
+  ══════════════════════════════════════ */
+  .confetti-piece {
+    position: fixed;
+    width: 10px; height: 10px;
+    pointer-events: none;
+    z-index: 999;
+    animation: confettiFall linear forwards;
+  }
+  @keyframes confettiFall {
+    0%   { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+  }
+
+  /* ══════════════════════════════════════
+     RESPONSIVE
+  ══════════════════════════════════════ */
+  @media (max-width: 400px) {
+    .header h1 { font-size: 2.8rem; }
+    .notif-buttons { grid-template-columns: 1fr; }
+    .inline-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- INSTALL BANNER -->
+<div class="install-banner" id="installBanner">
+  <span>📲 Installeer de app voor echte notificaties!</span>
+  <button onclick="installPWA()">Installeren</button>
+  <button onclick="document.getElementById('installBanner').classList.remove('show')" style="background:transparent;color:var(--cream);font-size:1rem;padding:4px 8px;">✕</button>
+</div>
+
+<div class="container">
+
+  <!-- THEME TOGGLE -->
+  <div class="theme-bar">
+    <button class="theme-btn" id="themeLight" onclick="setTheme('light')">☀ LIGHT</button>
+    <button class="theme-btn" id="themeDark"  onclick="setTheme('dark')">☾ DARK</button>
+    <button class="theme-btn" id="themeAuto"  onclick="setTheme('auto')">⊙ AUTO</button>
+  </div>
+
+  <!-- HEADER -->
+  <div class="header">
+    <span class="door-icon">🚪</span>
+    <h1>LANGS<br><span class="accent">KOMEN</span><br>BIJ BART</h1>
+    <p class="tagline">De enige officiële manier om aan te bellen</p>
+    <button class="bart-status" onclick="toggleBartStatus()" id="statusBtn">
+      <div class="status-dot"></div>
+      <span id="statusText">Bart is thuis (waarschijnlijk)</span>
+    </button>
+    <br>
+    <button class="bart-secret-btn" onclick="showPinModal()">🏠 Ik ben Bart</button>
+  </div>
+
+  <!-- LOGIN SCREEN -->
+  <div id="loginScreen" class="screen active">
+
+    <!-- PUSH PERMISSION CARD (shown after login) -->
+    <div class="notif-perm-card" id="notifPermCard">
+      <h3>🔔 Zet notificaties aan</h3>
+      <p>Als Bart wil je een melding ontvangen zodra iemand wil langskomen — ook als de app gesloten is. Zet dit aan om niks te missen!</p>
+      <button class="notif-perm-btn" id="notifPermBtn" onclick="requestNotificationPermission()">
+        🔔 Ja, stuur me meldingen!
+      </button>
+      <p class="notif-status" id="notifStatus"></p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">👤 Wie ben jij?</div>
+      <p style="font-size:0.8rem;color:var(--ink2);margin-bottom:20px;line-height:1.7;">
+        Voordat je stiekem bij Bart aanklopt, moet je even bewijzen dat je een echt mens bent en geen pizza bezorger.
+      </p>
+      <button class="google-btn" onclick="simulateGoogleLogin()">
+        <span class="google-logo">🔵</span>
+        Inloggen met Google
+      </button>
+      <p class="funny-text">
+        We gebruiken jouw Google account alleen om<br>te weten wie er straks aan de deur staat. 🕵️
+      </p>
+    </div>
+
+    <div class="rules-box">
+      <strong>📋 De Officiële Regels van Bart's Huis</strong>
+      ✅ Altijd minstens 48 uur van tevoren aanvragen<br>
+      ✅ Geen verrassingen (Bart houdt niet van verrassingen)<br>
+      ✅ Meenemen: snacks, goede verhalen, of beide<br>
+      ❌ Niet langskomen op zondag voor 12:00<br>
+      ❌ Niet meer dan 3 mensen tegelijk (inclusief jijzelf)<br>
+      ❌ Geen verborgen agenda's (we kijken naar jou, Jan)
+    </div>
+  </div>
+
+  <!-- VISITOR SCREEN -->
+  <div id="visitorScreen" class="screen">
+    <div class="user-pill" id="userPill">
+      <div class="avatar" id="userAvatar">?</div>
+      <span id="userNameDisplay">Niet ingelogd</span>
+    </div>
+
+    <div class="nav-tabs">
+      <button class="nav-tab active" id="tabBtnBezoek" onclick="switchTab('bezoek', this)">🚶 Bezoek aanvragen</button>
+      <button class="nav-tab" id="tabBtnMijn" onclick="switchTab('mijn', this)">📋 Mijn aanvragen</button>
+    </div>
+
+    <div id="tabBezoek" class="section-tab active">
+      <div class="card">
+        <div class="card-title">📅 Wanneer wil je langskomen?</div>
+        <div class="inline-row">
+          <div class="field-group">
+            <label>Dag</label>
+            <input type="date" id="visitDate" min="">
+          </div>
+          <div class="field-group">
+            <label>Tijd</label>
+            <input type="time" id="visitTime" value="15:00">
+          </div>
+        </div>
+        <!-- AGENDA CHECK BANNER -->
+        <div id="calendarCheck" style="display:none;border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:0.78rem;line-height:1.6;"></div>
+
+        <div class="field-group">
+          <label>Hoe lang blijf je? ⏱️</label>
+          <select id="visitDuration">
+            <option value="30min">30 minuutjes (bliksembezoek)</option>
+            <option value="1u">1 uurtje (bakkie koffie)</option>
+            <option value="2u" selected>2 uurtjes (normaal bezoek)</option>
+            <option value="3u">3 uurtjes (lang uitgebreid)</option>
+            <option value="heel-de-dag">De hele dag (overlast)</option>
+            <option value="logeren">Logeren (stuur ook pyjama)</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label>Wat is de aanleiding? 🎯</label>
+          <select id="visitReason">
+            <option value="">Kies een reden...</option>
+            <option value="gewoon">Gewoon zin in</option>
+            <option value="koffie">Koffie drinken</option>
+            <option value="spelletjes">Spelletjes doen</option>
+            <option value="series">Series kijken</option>
+            <option value="hulp">Bart heeft mijn hulp nodig</option>
+            <option value="eten">Samen eten</option>
+            <option value="praten">Gewoon lullen</option>
+            <option value="verjaardagsfeest">Surprise feestje 🎉 (gevaarlijk)</option>
+            <option value="anders">Anders / geheimzinnig</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label>Boodschap voor Bart 💬</label>
+          <textarea id="visitMessage" placeholder="Bijv: 'Ik bring zelfgemaakte koekjes!' of 'Ik moet dringend je toilet lenen...'"></textarea>
+        </div>
+        <div class="plus-one-section">
+          <div class="plus-one-toggle" onclick="togglePlusOne()">
+            <span>➕ Neem iemand mee?</span>
+            <button class="toggle-btn" id="plusOneBtn">Nee</button>
+          </div>
+          <div class="plus-one-fields" id="plusOneFields">
+            <br>
+            <label>Naam medenemer(s) 👥</label>
+            <input type="text" id="plusOneName" placeholder="Bijv: 'Mijn partner Lisa' of 'Twee vrienden + een hond'">
+            <div style="font-size:0.7rem;color:var(--ink2);">
+              ⚠️ Max. 2 extra personen. Honden tellen ook mee. Bart is allergisch voor drama.
+            </div>
+          </div>
+        </div>
+        <button class="submit-btn" onclick="submitVisit()">
+          🔔 Stuur melding naar Bart!
+        </button>
+        <p id="calendarNote" style="display:none;font-size:0.68rem;color:var(--ink2);text-align:center;margin-top:10px;">
+          📅 Bart's agenda wordt gecheckt...
+        </p>
+      </div>
+    </div>
+
+    <div id="tabMijn" class="section-tab">
+      <div class="card">
+        <div class="card-title">📋 Mijn bezoekverzoeken</div>
+        <div id="myVisitsList">
+          <div class="empty-state"><span>🙈</span>Je hebt nog geen bezoek aangevraagd.<br>Misschien ben je een beetje verlegen?</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BART SCREEN -->
+  <div id="bartScreen" class="screen">
+    <div class="user-pill">
+      <div class="avatar">🧔</div>
+      <span>Bart (baas van dit huis)</span>
+    </div>
+
+    <!-- NTFY SETUP FOR BART -->
+    <div class="notif-perm-card show" id="bartNotifCard">
+      <h3>🔔 Stel notificaties in</h3>
+      <p>Vul hieronder jouw persoonlijke ntfy-kanaal in. Dit is een geheime naam die alleen jij kent — houd hem dus niet te simpel!</p>
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <div style="flex:1">
+          <label style="color:#D4B896;font-size:0.65rem;margin-bottom:4px;">Jouw geheime kanaal</label>
+          <input type="text" id="ntfyChannel" placeholder="bijv: bart-geheim-1234"
+            style="margin-bottom:0;background:#1a1a1a;border-color:#444;color:#F5F2EB;border-radius:0;"
+            oninput="saveNtfyChannel()">
+        </div>
+      </div>
+      <p style="font-size:0.68rem;opacity:0.6;margin-bottom:12px;">
+        💡 Kies iets unieks. Iedereen die de naam weet kan berichten zien.
+      </p>
+      <button class="notif-perm-btn" id="bartNotifBtn" onclick="testNtfy()">
+        📲 Test melding sturen
+      </button>
+      <p class="notif-status" id="bartNotifStatus"></p>
+
+      <div style="margin-top:16px;padding-top:14px;border-top:1px solid #4A2E1A;font-size:0.68rem;opacity:0.75;line-height:1.8;">
+        <strong style="display:block;margin-bottom:6px;opacity:1;">📱 App installeren (eenmalig):</strong>
+        Android: <a href="https://play.google.com/store/apps/details?id=io.heckel.ntfy" target="_blank" style="color:var(--yellow)">Play Store → ntfy</a><br>
+        iPhone: <a href="https://apps.apple.com/app/ntfy/id1625396347" target="_blank" style="color:var(--yellow)">App Store → ntfy</a><br>
+        Dan: open ntfy → tik "+" → vul jouw kanaalnaam in → klaar!
+      </div>
+    </div>
+
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="switchBartTab('verzoeken', this)">🔔 Verzoeken</button>
+      <button class="nav-tab" onclick="switchBartTab('agenda', this)">📅 Agenda</button>
+    </div>
+
+    <div id="bartTabVerzoeken" class="section-tab active">
+      <div class="card">
+        <div class="card-title">🔔 Binnenkomende verzoeken</div>
+        <div id="bartVisitsList">
+          <div class="empty-state"><span>🏜️</span>Niemand wil bij je op bezoek komen.<br>Misschien moet je wat vaker douchen.</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="bartTabAgenda" class="section-tab">
+      <div class="card">
+        <div class="card-title">📅 Google Agenda koppelen</div>
+        <p style="font-size:0.78rem;color:var(--ink2);line-height:1.7;margin-bottom:16px;">
+          Plak hier je iCal-link. Bezoekers zien dan automatisch wanneer je al iets hebt staan.
+        </p>
+        <div class="field-group">
+          <label>iCal URL (geheime link)</label>
+          <input type="url" id="icalUrl" placeholder="https://calendar.google.com/calendar/ical/..."
+            value="" oninput="saveIcalUrl()">
+        </div>
+        <div style="background:#FFF3E0;border:2px solid var(--yellow);border-radius:12px;padding:14px;font-size:0.72rem;line-height:1.9;margin-bottom:16px;">
+          <strong style="display:block;margin-bottom:4px;">📋 Hoe krijg je de link?</strong>
+          1. Ga naar <strong>calendar.google.com</strong><br>
+          2. Klik op ⚙️ naast je agenda → <strong>Instellingen</strong><br>
+          3. Scroll naar <strong>"Agenda integreren"</strong><br>
+          4. Kopieer de <strong>"Geheime iCal-link"</strong> (niet de publieke!)<br>
+          5. Plak hem hierboven 👆
+        </div>
+        <button class="notif-perm-btn" onclick="testIcalFeed()">
+          🔍 Test verbinding
+        </button>
+        <p id="icalStatus" style="font-size:0.7rem;margin-top:10px;color:var(--ink2);text-align:center;"></p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">✅ Goedgekeurde bezoeken</div>
+        <div id="bartAgendaList">
+          <div class="empty-state"><span>📅</span>Je agenda is leeg.<br>Je sociale leven ook. Jk. Misschien.</div>
+        </div>
+      </div>
+    </div>
+
+    <button class="submit-btn" onclick="switchToVisitor()" style="background:var(--dgrey);color:var(--white);border-color:var(--black);box-shadow:5px 5px 0 var(--black);margin-top:8px;">
+      ← BEZOEKER WEERGAVE
+    </button>
+  </div>
+
+</div>
+
+<!-- PIN MODAL -->
+<div class="notification-overlay hidden" id="pinOverlay">
+  <div class="notification-card" style="max-width:340px;">
+    <span class="notif-emoji">🔐</span>
+    <div class="notif-title">PINCODE</div>
+    <div class="notif-body">Alleen Bart komt hier doorheen.</div>
+
+    <!-- PIN dots display -->
+    <div id="pinDots" style="display:flex;justify-content:center;gap:14px;margin:16px 0 20px;">
+      <div class="pin-dot"></div>
+      <div class="pin-dot"></div>
+      <div class="pin-dot"></div>
+      <div class="pin-dot"></div>
+      <div class="pin-dot"></div>
+      <div class="pin-dot"></div>
+    </div>
+
+    <!-- Numpad -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;">
+      <button class="pin-key" onclick="pinInput('1')">1</button>
+      <button class="pin-key" onclick="pinInput('2')">2</button>
+      <button class="pin-key" onclick="pinInput('3')">3</button>
+      <button class="pin-key" onclick="pinInput('4')">4</button>
+      <button class="pin-key" onclick="pinInput('5')">5</button>
+      <button class="pin-key" onclick="pinInput('6')">6</button>
+      <button class="pin-key" onclick="pinInput('7')">7</button>
+      <button class="pin-key" onclick="pinInput('8')">8</button>
+      <button class="pin-key" onclick="pinInput('9')">9</button>
+      <button class="pin-key pin-key--cancel" onclick="closePinModal()">✕</button>
+      <button class="pin-key" onclick="pinInput('0')">0</button>
+      <button class="pin-key pin-key--del" onclick="pinDelete()">⌫</button>
+    </div>
+
+    <p id="pinError" style="font-size:0.68rem;color:var(--red);min-height:1.2em;text-align:center;font-weight:700;letter-spacing:0.05em;"></p>
+  </div>
+</div>
+<div class="notification-overlay hidden" id="notifOverlay">
+  <div class="notification-card">
+    <span class="notif-emoji" id="notifEmoji">🔔</span>
+    <div class="notif-title" id="notifTitle">Iemand wil langskomen!</div>
+    <div class="notif-body" id="notifBody"></div>
+    <div class="notif-buttons">
+      <button class="btn-yes" onclick="respondToVisit('yes')">✅ Tuurlijk!</button>
+      <button class="btn-no" onclick="respondToVisit('no')">❌ Geen zin</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESPONSE OVERLAY -->
+<div class="notification-overlay hidden" id="responseOverlay">
+  <div class="notification-card">
+    <span class="notif-emoji" id="responseEmoji">🎉</span>
+    <div class="notif-title" id="responseTitle">...</div>
+    <div class="notif-body" id="responseBody" style="text-align:center;"></div>
+    <button class="submit-btn" onclick="closeResponse()" style="margin-top:16px;">Oke 👍</button>
+  </div>
+</div>
+
+<script>
+// ==========================================
+// STATE
+// ==========================================
+let currentUser = null;
+let isBartMode = false;
+let plusOneEnabled = false;
+let pendingVisitIndex = null;
+let deferredInstallPrompt = null;
+let swRegistration = null;
+
+const visits = JSON.parse(localStorage.getItem('bart_visits') || '[]');
+const isBartStored = localStorage.getItem('bart_is_bart') === 'true';
+
+const BART_STATUS = [
+  'Bart is thuis (waarschijnlijk)',
+  'Bart is in bad 🛁',
+  'Bart is aan het gamen 🎮',
+  'Bart slaapt (sssst) 😴',
+  'Bart kijkt Netflix 📺',
+  'Bart ontkent alles',
+];
+let statusIdx = 0;
+
+const FUNNY_ACCEPTS = [
+  'Bart zegt: "Kom maar, maar ik heb NIKS in huis." 😅',
+  'Bart zegt: "Top! Neem wel iets te eten mee hè." 🍕',
+  'Bart zegt: "Gezellig! Maar verwacht geen schoon huis." 🧹',
+  'Bart zegt: "YESSS. Ik was het zo zat alleen thuis." 🥳',
+  'Bart zegt: "Prima! Maar jij doet de afwas." 🍽️',
+];
+const FUNNY_DECLINES = [
+  'Bart zegt: "Ik was net lekker op de bank liggen..." 🛋️',
+  'Bart zegt: "Mijn plant heeft me al genoeg gezelschap." 🌱',
+  'Bart zegt: "Ik moet mijn sokken sorteren. Kritisch." 🧦',
+  'Bart zegt: "Misschien een andere keer, of nooit." 🤷',
+  'Bart zegt: "Ik heb al plannen met mezelf." 💆',
+];
+
+// ==========================================
+// SERVICE WORKER REGISTRATION
+// ==========================================
+async function registerServiceWorker() {
+  if (!('serviceWorker' in navigator)) return null;
+  try {
+    const reg = await navigator.serviceWorker.register('/sw.js');
+    swRegistration = reg;
+    console.log('[PWA] Service Worker registered');
+
+    // Listen for messages from SW (e.g. respond from notification action)
+    navigator.serviceWorker.addEventListener('message', e => {
+      if (e.data?.type === 'RESPOND_VISIT') {
+        handleVisitResponse(e.data.visitId, e.data.response);
+      }
+    });
+
+    return reg;
+  } catch (err) {
+    console.warn('[PWA] SW registration failed:', err);
+    return null;
+  }
+}
+
+// ==========================================
+// PUSH NOTIFICATIONS
+// ==========================================
+
+// VAPID public key — replace with your own from web-push library!
+// Generate with: npx web-push generate-vapid-keys
+// Then paste the publicKey here and use privateKey on your backend
+const VAPID_PUBLIC_KEY = 'BEl62iUYgUivxIkv69yViEuiBIa40HI80NM1e6b9aKnSZTDpFRORrCERm5hxDxQXqN3k0FWKJ9G7aJ7x3Q3V9DA';
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+}
+
+async function requestNotificationPermission(forBart = false) {
+  const btn = document.getElementById(forBart ? 'bartNotifBtn' : 'notifPermBtn');
+  const status = document.getElementById(forBart ? 'bartNotifStatus' : 'notifStatus');
+
+  if (!('Notification' in window)) {
+    status.textContent = '❌ Je browser ondersteunt geen notificaties.';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Toestemming vragen...';
+
+  const permission = await Notification.requestPermission();
+
+  if (permission === 'granted') {
+    status.textContent = '✅ Notificaties aan! Je krijgt een melding als iemand wil langskomen.';
+    btn.textContent = '✅ Notificaties aan!';
+    btn.style.background = 'var(--green)';
+
+    // Subscribe to push
+    if (swRegistration) {
+      try {
+        const sub = await swRegistration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+        });
+        // In a real app: send sub to your backend
+        // fetch('/api/subscribe', { method: 'POST', body: JSON.stringify(sub) })
+        localStorage.setItem('bart_push_sub', JSON.stringify(sub));
+        console.log('[PWA] Push subscription:', sub);
+      } catch (err) {
+        console.warn('[PWA] Push subscribe failed:', err);
+        // Still works with local notifications
+      }
+    }
+
+    // Store bart notification preference
+    if (forBart) localStorage.setItem('bart_notif_enabled', 'true');
+
+    // Hide card after 3 seconds
+    setTimeout(() => {
+      const card = document.getElementById(forBart ? 'bartNotifCard' : 'notifPermCard');
+      if (card) card.style.display = 'none';
+    }, 3000);
+
+  } else if (permission === 'denied') {
+    status.textContent = '🚫 Notificaties geblokkeerd. Wijzig dit in je browserinstellingen.';
+    btn.textContent = '🚫 Geblokkeerd';
+    btn.disabled = true;
+  } else {
+    btn.disabled = false;
+    btn.textContent = '🔔 Probeer opnieuw';
+    status.textContent = 'Toestemming geweigerd. Probeer opnieuw.';
+  }
+}
+
+function sendBrowserNotification(visit) {
+  // Only send if permission granted and Bart mode stored
+  if (Notification.permission !== 'granted') return;
+  if (!localStorage.getItem('bart_notif_enabled')) return;
+
+  const dateStr = new Date(visit.date + 'T' + visit.time).toLocaleDateString('nl-NL', {
+    weekday: 'long', day: 'numeric', month: 'long'
+  });
+
+  const notif = new Notification('🚪 Iemand wil langskomen bij Bart!', {
+    body: `${visit.visitor} wil op ${dateStr} om ${visit.time} langskomen (${visit.duration}).\n"${visit.message || 'geen bericht'}"`,
+    icon: '/icons/icon-192.png',
+    badge: '/icons/icon-192.png',
+    tag: 'bart-visit-' + visit.id,
+    requireInteraction: true,
+    vibrate: [200, 100, 200],
+    data: { visitId: visit.id }
+  });
+
+  notif.onclick = () => {
+    window.focus();
+    loginAsBart();
+    notif.close();
+  };
+}
+
+// ==========================================
+// PWA INSTALL
+// ==========================================
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  document.getElementById('installBanner').classList.add('show');
+});
+
+async function installPWA() {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  const { outcome } = await deferredInstallPrompt.userChoice;
+  if (outcome === 'accepted') document.getElementById('installBanner').classList.remove('show');
+  deferredInstallPrompt = null;
+}
+
+window.addEventListener('appinstalled', () => {
+  document.getElementById('installBanner').classList.remove('show');
+  console.log('[PWA] App installed!');
+});
+
+// ==========================================
+// NTFY
+// ==========================================
+function saveNtfyChannel() {
+  const val = document.getElementById('ntfyChannel').value.trim();
+  if (val) localStorage.setItem('bart_ntfy_channel', val);
+}
+
+function getNtfyChannel() {
+  return localStorage.getItem('bart_ntfy_channel') || '';
+}
+
+async function testNtfy() {
+  const channel = getNtfyChannel();
+  const status = document.getElementById('bartNotifStatus');
+  if (!channel) {
+    status.textContent = '⚠️ Vul eerst een kanaalnaam in!';
+    return;
+  }
+  status.textContent = '⏳ Testmelding sturen...';
+  try {
+    await fetch(`https://ntfy.sh/${encodeURIComponent(channel)}`, {
+      method: 'POST',
+      headers: { 'Title': '🚪 Test - Langskomen bij Bart', 'Tags': 'white_check_mark' },
+      body: 'Als je dit ziet werkt alles! 🎉'
+    });
+    status.textContent = '✅ Testmelding verstuurd! Check je ntfy app.';
+  } catch (e) {
+    status.textContent = '❌ Mislukt: ' + e.message;
+  }
+}
+
+async function sendNtfyNotification(visit) {
+  const channel = getNtfyChannel();
+  if (!channel) return;
+  const dateStr = new Date(visit.date + 'T' + visit.time).toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' });
+  const plusTxt = visit.plusOne ? `\n👥 +1: ${visit.plusOneName || 'iemand'}` : '';
+  const msgTxt  = visit.message ? `\n💬 "${visit.message}"` : '';
+  try {
+    await fetch(`https://ntfy.sh/${encodeURIComponent(channel)}`, {
+      method: 'POST',
+      headers: {
+        'Title': `🚪 ${visit.visitor} wil langskomen!`,
+        'Priority': 'high',
+        'Tags': 'door,bell',
+        'Click': window.location.origin + '/#bart',
+      },
+      body: `📅 ${dateStr} om ${visit.time}\n⏱ ${visit.duration}${plusTxt}${msgTxt}`
+    });
+  } catch (e) { console.warn('[ntfy]', e); }
+}
+
+// Load saved ntfy channel into field
+function loadNtfyField() {
+  const saved = getNtfyChannel();
+  const field = document.getElementById('ntfyChannel');
+  if (field && saved) field.value = saved;
+}
+
+// ==========================================
+// APP LOGIC
+// ==========================================
+function saveVisits() {
+  localStorage.setItem('bart_visits', JSON.stringify(visits));
+}
+
+function simulateGoogleLogin() {
+  const names = ['Sander de Groot', 'Lisa van Dijk', 'Kees Janssen', 'Emma Bakker', 'Pieter Smits', 'Noor de Vries', 'Tom Willems'];
+  const randomName = names[Math.floor(Math.random() * names.length)];
+
+  currentUser = {
+    name: randomName,
+    email: randomName.toLowerCase().replace(' ', '.') + '@gmail.com',
+    avatar: randomName[0]
+  };
+
+  document.getElementById('userAvatar').textContent = currentUser.avatar;
+  document.getElementById('userNameDisplay').textContent = currentUser.name;
+  showScreen('visitorScreen');
+  renderMyVisits();
+}
+
+function loginAsBart() {
+  isBartMode = true;
+  localStorage.setItem('bart_is_bart', 'true');
+  showScreen('bartScreen');
+  renderBartVisits();
+  loadIcalField();
+  loadNtfyField();
+
+  // Hide ntfy card if channel already set
+  const channel = getNtfyChannel();
+  if (channel) document.getElementById('bartNotifCard').style.display = 'none';
+}
+
+function switchToVisitor() {
+  isBartMode = false;
+  currentUser = null;
+  showScreen('loginScreen');
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function switchTab(tab, btn) {
+  document.querySelectorAll('#visitorScreen .nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('#visitorScreen .section-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab' + cap(tab)).classList.add('active');
+  if (tab === 'mijn') renderMyVisits();
+}
+
+function switchBartTab(tab, btn) {
+  document.querySelectorAll('#bartScreen .nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('#bartScreen .section-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('bartTab' + cap(tab)).classList.add('active');
+}
+
+function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+function togglePlusOne() {
+  plusOneEnabled = !plusOneEnabled;
+  document.getElementById('plusOneBtn').textContent = plusOneEnabled ? 'Ja' : 'Nee';
+  document.getElementById('plusOneBtn').className = 'toggle-btn' + (plusOneEnabled ? ' on' : '');
+  document.getElementById('plusOneFields').className = 'plus-one-fields' + (plusOneEnabled ? ' open' : '');
+}
+
+function toggleBartStatus() {
+  statusIdx = (statusIdx + 1) % BART_STATUS.length;
+  document.getElementById('statusText').textContent = BART_STATUS[statusIdx];
+}
+
+function submitVisit() {
+  const date = document.getElementById('visitDate').value;
+  const time = document.getElementById('visitTime').value;
+  const duration = document.getElementById('visitDuration').value;
+  const reason = document.getElementById('visitReason').value;
+  const message = document.getElementById('visitMessage').value;
+  const plusOneName = plusOneEnabled ? document.getElementById('plusOneName').value : null;
+
+  if (!date || !time || !reason) {
+    alert('⚠️ Vul even alle velden in! Bart houdt van compleetheid.');
+    return;
+  }
+
+  const visit = {
+    id: Date.now(),
+    visitor: currentUser.name,
+    email: currentUser.email,
+    avatar: currentUser.avatar,
+    date, time, duration, reason, message,
+    plusOne: plusOneEnabled,
+    plusOneName,
+    status: 'pending',
+    submitted: new Date().toISOString()
+  };
+
+  visits.unshift(visit);
+  saveVisits();
+
+  // Stuur ntfy pushmelding naar Bart
+  sendNtfyNotification(visit);
+
+  // Show in-app notification after short delay (simulating Bart seeing it)
+  setTimeout(() => {
+    showInAppNotification(visit, 0);
+  }, 1000);
+
+  showResponseOverlay('📬', 'Aanvraag verstuurd!',
+    `Bart heeft je melding ontvangen op zijn telefoon, smartwatch, laptop, koelkast, en magnetron. Hij reageert zo snel als hij wil (of nooit). 🤷`
+  );
+}
+
+function showInAppNotification(visit, idx) {
+  pendingVisitIndex = idx;
+  const dateStr = new Date(visit.date + 'T' + visit.time).toLocaleDateString('nl-NL', {
+    weekday: 'long', day: 'numeric', month: 'long'
+  });
+
+  let body = `
+    <div style="margin:10px 0">
+      <div class="notif-visitor-name">${visit.avatar} ${visit.visitor}</div>
+    </div>
+    wil langskomen op:<br>
+    <div class="notif-time-badge">📅 ${dateStr} om ${visit.time}</div><br>
+    <strong>Hoe lang:</strong> ${visit.duration}<br>
+    <strong>Reden:</strong> ${visit.reason}
+  `;
+  if (visit.plusOne) body += `<br><strong>+1:</strong> ${visit.plusOneName || 'iemand'} 👥`;
+  if (visit.message) body += `<br><br><em>"${visit.message}"</em>`;
+
+  document.getElementById('notifTitle').textContent = '🚪 Iemand wil langskomen!';
+  document.getElementById('notifEmoji').textContent = '🔔';
+  document.getElementById('notifBody').innerHTML = body;
+  document.getElementById('notifOverlay').classList.remove('hidden');
+}
+
+function respondToVisit(response) {
+  document.getElementById('notifOverlay').classList.add('hidden');
+  if (pendingVisitIndex === null) return;
+
+  handleVisitResponse(visits[pendingVisitIndex]?.id, response);
+  pendingVisitIndex = null;
+}
+
+function handleVisitResponse(visitId, response) {
+  const idx = visits.findIndex(v => v.id == visitId);
+  if (idx === -1) return;
+
+  visits[idx].status = response === 'yes' ? 'accepted' : 'declined';
+  saveVisits();
+
+  if (response === 'yes') {
+    showResponseOverlay('🎉', 'Bart zegt JA!', FUNNY_ACCEPTS[Math.floor(Math.random() * FUNNY_ACCEPTS.length)]);
+    triggerConfetti();
+  } else {
+    showResponseOverlay('😅', 'Bart zegt nee...', FUNNY_DECLINES[Math.floor(Math.random() * FUNNY_DECLINES.length)]);
+  }
+
+  renderBartVisits();
+  renderMyVisits();
+}
+
+function showResponseOverlay(emoji, title, body) {
+  document.getElementById('responseEmoji').textContent = emoji;
+  document.getElementById('responseTitle').textContent = title;
+  document.getElementById('responseBody').textContent = body;
+  document.getElementById('responseOverlay').classList.remove('hidden');
+}
+
+function closeResponse() {
+  document.getElementById('responseOverlay').classList.add('hidden');
+}
+
+function renderMyVisits() {
+  if (!currentUser) return;
+  const myVisits = visits.filter(v => v.visitor === currentUser.name);
+  const el = document.getElementById('myVisitsList');
+
+  if (!myVisits.length) {
+    el.innerHTML = `<div class="empty-state"><span>🙈</span>Je hebt nog geen bezoek aangevraagd.<br>Misschien ben je een beetje verlegen?</div>`;
+    return;
+  }
+
+  el.innerHTML = myVisits.map(v => {
+    const d = new Date(v.date + 'T' + v.time).toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' });
+    const bClass = v.status === 'accepted' ? 'badge-yes' : v.status === 'declined' ? 'badge-no' : 'badge-pending';
+    const bText = v.status === 'accepted' ? '✅ Goedgekeurd' : v.status === 'declined' ? '❌ Afgewezen' : '⏳ In afwachting';
+    return `<div class="visit-item">
+      <div>
+        <div class="visit-name">${d} om ${v.time}</div>
+        <div class="visit-time">${v.duration} · ${v.reason}${v.plusOne ? ' · +1' : ''}</div>
+      </div>
+      <div class="visit-badge ${bClass}">${bText}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderBartVisits() {
+  const pending = visits.filter(v => v.status === 'pending');
+  const accepted = visits.filter(v => v.status === 'accepted');
+
+  const elP = document.getElementById('bartVisitsList');
+  elP.innerHTML = pending.length === 0
+    ? `<div class="empty-state"><span>🏜️</span>Niemand wil bij je op bezoek komen.<br>Misschien moet je wat vaker douchen.</div>`
+    : pending.map(v => {
+        const d = new Date(v.date + 'T' + v.time).toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' });
+        return `<div class="visit-item" style="flex-direction:column;align-items:flex-start;gap:10px">
+          <div style="display:flex;justify-content:space-between;width:100%;align-items:center">
+            <div>
+              <div class="visit-name">${v.avatar} ${v.visitor}</div>
+              <div class="visit-time">${d} om ${v.time}</div>
+            </div>
+            <div class="visit-badge badge-pending">⏳ Wacht</div>
+          </div>
+          ${v.message ? `<div style="font-size:0.75rem;color:var(--ink2);font-style:italic">"${v.message}"</div>` : ''}
+          ${v.plusOne ? `<div style="font-size:0.72rem;">👥 +1: ${v.plusOneName || 'iemand'}</div>` : ''}
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%">
+            <button class="btn-yes" style="font-size:0.8rem;padding:10px" onclick="quickRespond(${visits.indexOf(v)}, 'yes')">✅ Ja!</button>
+            <button class="btn-no" style="font-size:0.8rem;padding:10px" onclick="quickRespond(${visits.indexOf(v)}, 'no')">❌ Nee</button>
+          </div>
+        </div>`;
+      }).join('');
+
+  const elA = document.getElementById('bartAgendaList');
+  elA.innerHTML = accepted.length === 0
+    ? `<div class="empty-state"><span>📅</span>Je agenda is leeg.<br>Je sociale leven ook. Jk. Misschien.</div>`
+    : accepted.map(v => {
+        const d = new Date(v.date + 'T' + v.time).toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' });
+        return `<div class="visit-item">
+          <div>
+            <div class="visit-name">${v.avatar} ${v.visitor}${v.plusOne ? ' +1' : ''}</div>
+            <div class="visit-time">${d} ${v.time} · ${v.duration}</div>
+          </div>
+          <div class="visit-badge badge-yes">✅ Komt!</div>
+        </div>`;
+      }).join('');
+}
+
+function quickRespond(idx, response) {
+  visits[idx].status = response === 'yes' ? 'accepted' : 'declined';
+  saveVisits();
+  renderBartVisits();
+  if (response === 'yes') triggerConfetti();
+}
+
+function triggerConfetti() {
+  const colors = ['#E85D04', '#FFB703', '#2D6A4F', '#2C1A0E', '#9B2226'];
+  for (let i = 0; i < 40; i++) {
+    const div = document.createElement('div');
+    div.className = 'confetti-piece';
+    div.style.left = Math.random() * 100 + 'vw';
+    div.style.top = '-20px';
+    div.style.background = colors[Math.floor(Math.random() * colors.length)];
+    div.style.animationDuration = (1.5 + Math.random() * 2) + 's';
+    div.style.animationDelay = Math.random() * 0.5 + 's';
+    document.body.appendChild(div);
+    setTimeout(() => div.remove(), 4000);
+  }
+}
+
+// ==========================================
+// GOOGLE CALENDAR / iCAL INTEGRATIE
+// ==========================================
+
+function saveIcalUrl() {
+  const url = document.getElementById('icalUrl').value.trim();
+  localStorage.setItem('bart_ical_url', url);
+}
+
+function getIcalUrl() {
+  return localStorage.getItem('bart_ical_url') || '';
+}
+
+// Parse iCal text into array of {summary, start, end} events
+function parseICal(text) {
+  const events = [];
+  const lines = text.replace(/\r\n /g, '').replace(/\r\n\t/g, '').split(/\r\n|\n/);
+  let current = null;
+
+  for (const line of lines) {
+    if (line === 'BEGIN:VEVENT') { current = {}; continue; }
+    if (line === 'END:VEVENT' && current) {
+      if (current.start && current.end) events.push(current);
+      current = null;
+      continue;
+    }
+    if (!current) continue;
+
+    if (line.startsWith('SUMMARY:')) current.summary = line.slice(8);
+    if (line.startsWith('DTSTART')) current.start = parseICalDate(line);
+    if (line.startsWith('DTEND'))   current.end   = parseICalDate(line);
+  }
+  return events;
+}
+
+function parseICalDate(line) {
+  // Formats: DTSTART:20240315T140000Z  or  DTSTART;TZID=...:20240315T140000
+  const val = line.includes(':') ? line.split(':').slice(1).join(':') : line;
+  const clean = val.replace(/Z$/, '');
+  if (clean.length === 8) {
+    // All-day: YYYYMMDD
+    return new Date(clean.slice(0,4)+'-'+clean.slice(4,6)+'-'+clean.slice(6,8)+'T00:00:00');
+  }
+  // DateTime: YYYYMMDDTHHmmss
+  return new Date(
+    clean.slice(0,4)+'-'+clean.slice(4,6)+'-'+clean.slice(6,8)+'T'+
+    clean.slice(9,11)+':'+clean.slice(11,13)+':'+clean.slice(13,15)
+  );
+}
+
+// Fetch iCal via CORS proxy and return parsed events
+async function fetchCalendarEvents() {
+  const url = getIcalUrl();
+  if (!url) return null;
+
+  // Use corsproxy.io to bypass CORS
+  const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+  try {
+    const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    return parseICal(text);
+  } catch (e) {
+    console.warn('[iCal] Fetch failed:', e);
+    return null;
+  }
+}
+
+// Duration string -> minutes
+function durationToMinutes(dur) {
+  const map = { '30min': 30, '1u': 60, '2u': 120, '3u': 180, 'heel-de-dag': 480, 'logeren': 720 };
+  return map[dur] || 120;
+}
+
+// Check if proposed visit overlaps with calendar events
+function checkOverlap(events, dateStr, timeStr, durationStr) {
+  const start = new Date(dateStr + 'T' + timeStr);
+  const end   = new Date(start.getTime() + durationToMinutes(durationStr) * 60000);
+
+  return events.filter(ev => {
+    // Overlap: not (ev.end <= start || ev.start >= end)
+    return !(ev.end <= start || ev.start >= end);
+  });
+}
+
+// Called when date/time/duration changes — update the check banner
+async function checkCalendarAvailability() {
+  const date = document.getElementById('visitDate').value;
+  const time = document.getElementById('visitTime').value;
+  const duration = document.getElementById('visitDuration').value;
+  const banner = document.getElementById('calendarCheck');
+
+  if (!date || !time) { banner.style.display = 'none'; return; }
+  if (!getIcalUrl()) { banner.style.display = 'none'; return; }
+
+  banner.style.display = 'block';
+  banner.style.background = '#F0F0F0';
+  banner.style.border = '2px solid #CCC';
+  banner.style.color = '#666';
+  banner.innerHTML = '⏳ Bart\'s agenda checken...';
+
+  const events = await fetchCalendarEvents();
+  if (!events) {
+    banner.style.display = 'none';
+    return;
+  }
+
+  const conflicts = checkOverlap(events, date, time, duration);
+
+  if (conflicts.length === 0) {
+    banner.style.background = '#D1E7DD';
+    banner.style.border = '2px solid #2D6A4F';
+    banner.style.color = '#0A3622';
+    banner.innerHTML = '✅ <strong>Bart lijkt vrij!</strong> Geen afspraken gevonden op dit tijdstip.';
+  } else {
+    const names = conflicts.map(e => `"${e.summary || 'bezet'}"`).join(', ');
+    banner.style.background = '#F8D7DA';
+    banner.style.border = '2px solid #9B2226';
+    banner.style.color = '#58151C';
+    banner.innerHTML = `⚠️ <strong>Bart heeft al iets staan:</strong> ${names}.<br>
+      <span style="font-size:0.7rem">Je kunt nog steeds aanvragen — Bart beslist zelf.</span>`;
+  }
+}
+
+async function testIcalFeed() {
+  const status = document.getElementById('icalStatus');
+  status.textContent = '⏳ Verbinding testen...';
+  status.style.color = 'var(--muted)';
+
+  const events = await fetchCalendarEvents();
+  if (events === null) {
+    status.style.color = 'var(--red)';
+    status.textContent = '❌ Kan agenda niet laden. Check de URL en probeer opnieuw.';
+  } else {
+    status.style.color = 'var(--green)';
+    status.textContent = `✅ Verbonden! ${events.length} evenement(en) gevonden.`;
+  }
+}
+
+// ==========================================
+// INIT
+// ==========================================
+document.getElementById('visitDate').min = new Date().toISOString().split('T')[0];
+
+// Calendar availability check triggers
+['visitDate', 'visitTime', 'visitDuration'].forEach(id => {
+  document.getElementById(id).addEventListener('change', checkCalendarAvailability);
+});
+
+// Load saved iCal URL into Bart's field when screen loads
+function loadIcalField() {
+  const saved = getIcalUrl();
+  const field = document.getElementById('icalUrl');
+  if (field && saved) field.value = saved;
+}
+
+// Handle URL params for SW notification response
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('respond') && urlParams.get('visit')) {
+  const action = urlParams.get('respond');
+  const visitId = parseInt(urlParams.get('visit'));
+  loginAsBart();
+  setTimeout(() => handleVisitResponse(visitId, action), 500);
+  window.history.replaceState({}, '', '/#bart');
+}
+
+// Auto-login Bart if stored
+if (window.location.hash === '#bart' || isBartStored) {
+  loginAsBart();
+}
+
+// Update notification button states
+if (Notification.permission === 'granted') {
+  ['notifPermBtn', 'bartNotifBtn'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) { btn.textContent = '✅ Notificaties aan!'; btn.disabled = true; btn.style.background = 'var(--green)'; }
+  });
+  if (document.getElementById('bartNotifCard')) document.getElementById('bartNotifCard').style.display = 'none';
+} else if (Notification.permission === 'denied') {
+  ['notifPermBtn', 'bartNotifBtn'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) { btn.textContent = '🚫 Notificaties geblokkeerd'; btn.disabled = true; }
+  });
+}
+
+// ==========================================
+// PIN BEVEILIGING
+// ==========================================
+const BART_PIN_HASH = '0ac777e60b5e5497579bdf786c0b1fa385e8d94fe3d0ccbe332b9df58a06fa1a';
+let pinBuffer = '';
+
+async function hashPin(pin) {
+  const encoded = new TextEncoder().encode(pin);
+  const hashBuf = await crypto.subtle.digest('SHA-256', encoded);
+  return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+function showPinModal() {
+  // Already verified this session? Skip pin
+  if (sessionStorage.getItem('bart_verified') === '1') {
+    loginAsBart();
+    return;
+  }
+  pinBuffer = '';
+  updatePinDots();
+  document.getElementById('pinError').textContent = '';
+  document.getElementById('pinOverlay').classList.remove('hidden');
+}
+
+function closePinModal() {
+  pinBuffer = '';
+  updatePinDots();
+  document.getElementById('pinOverlay').classList.add('hidden');
+}
+
+function pinInput(digit) {
+  if (pinBuffer.length >= 6) return;
+  pinBuffer += digit;
+  updatePinDots();
+  if (pinBuffer.length === 6) verifyPin();
+}
+
+function pinDelete() {
+  pinBuffer = pinBuffer.slice(0, -1);
+  updatePinDots();
+}
+
+function updatePinDots() {
+  document.querySelectorAll('.pin-dot').forEach((dot, i) => {
+    dot.classList.toggle('filled', i < pinBuffer.length);
+    dot.classList.remove('error', 'ok');
+  });
+}
+
+async function verifyPin() {
+  const entered = await hashPin(pinBuffer);
+  const dots = document.querySelectorAll('.pin-dot');
+
+  if (entered === BART_PIN_HASH) {
+    // Correct!
+    dots.forEach(d => { d.classList.add('ok'); d.classList.remove('filled'); });
+    sessionStorage.setItem('bart_verified', '1');
+    setTimeout(() => {
+      closePinModal();
+      loginAsBart();
+    }, 400);
+  } else {
+    // Wrong
+    dots.forEach(d => { d.classList.add('error'); d.classList.remove('filled'); });
+    document.getElementById('pinError').textContent = 'FOUT — PROBEER OPNIEUW';
+    document.getElementById('pinDots').classList.add('pin-shake');
+    setTimeout(() => {
+      document.getElementById('pinDots').classList.remove('pin-shake');
+      dots.forEach(d => d.classList.remove('error'));
+      pinBuffer = '';
+      updatePinDots();
+      document.getElementById('pinError').textContent = '';
+    }, 700);
+  }
+}
+
+// ==========================================
+// THEME
+// ==========================================
+function setTheme(mode) {
+  localStorage.setItem('bart_theme', mode);
+  applyTheme(mode);
+}
+
+function applyTheme(mode) {
+  const root = document.documentElement;
+  if (mode === 'dark')  root.setAttribute('data-theme', 'dark');
+  else if (mode === 'light') root.setAttribute('data-theme', 'light');
+  else root.removeAttribute('data-theme'); // auto = system
+
+  // Update toggle buttons
+  ['Light','Dark','Auto'].forEach(t => {
+    const btn = document.getElementById('theme' + t);
+    if (btn) btn.classList.toggle('active', mode === t.toLowerCase());
+  });
+}
+
+// Boot theme immediately (avoids flash)
+applyTheme(localStorage.getItem('bart_theme') || 'auto');
+
+// ==========================================
+// BOOT
+// ==========================================
+registerServiceWorker();
+</script>
+</body>
+</html>
