@@ -1463,23 +1463,28 @@ async function loginWithName() {
 function simulateGoogleLogin() { /* deprecated */ }
 
 // Called by Google Identity Services after successful login
-function onGoogleLogin(credentialResponse) {
-  const payload = parseJwt(credentialResponse.credential);
-  if (!payload) {
-    document.getElementById('loginError').textContent = 'Inloggen mislukt. Probeer opnieuw.';
-    return;
+async function onGoogleLogin(credentialResponse) {
+  try {
+    const payload = parseJwt(credentialResponse.credential);
+    if (!payload) {
+      document.getElementById('loginError').textContent = 'Inloggen mislukt. Probeer opnieuw.';
+      return;
+    }
+
+    const name    = payload.name  || payload.given_name || 'Gast';
+    const email   = payload.email || '';
+    const picture = payload.picture || '';
+    const avatar  = name[0].toUpperCase();
+
+    localStorage.setItem('bart_visitor_name',    name);
+    localStorage.setItem('bart_visitor_email',   email);
+    localStorage.setItem('bart_visitor_picture', picture);
+
+    await loginAsVisitor({ name, email, avatar, picture });
+  } catch (e) {
+    console.error('[Google login] Error:', e);
+    document.getElementById('loginError').textContent = 'Fout bij inloggen: ' + e.message;
   }
-
-  const name    = payload.name  || payload.given_name || 'Gast';
-  const email   = payload.email || '';
-  const picture = payload.picture || '';
-  const avatar  = name[0].toUpperCase();
-
-  localStorage.setItem('bart_visitor_name',    name);
-  localStorage.setItem('bart_visitor_email',   email);
-  localStorage.setItem('bart_visitor_picture', picture);
-
-  loginAsVisitor({ name, email, avatar, picture });
 }
 
 function parseJwt(token) {
@@ -1503,10 +1508,10 @@ async function loginAsVisitor({ name, email, avatar, picture }) {
   }
   document.getElementById('userNameDisplay').textContent = name;
 
-  await loadVisits();
-  await loadBartState();
-  renderVisitorBartStatus();
+  try { await loadVisits(); }    catch (e) { console.warn('[loginAsVisitor] loadVisits:', e); }
+  try { await loadBartState(); } catch (e) { console.warn('[loginAsVisitor] loadBartState:', e); }
 
+  renderVisitorBartStatus();
   showScreen('visitorScreen');
   renderMyVisits();
 }
