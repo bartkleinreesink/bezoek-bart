@@ -13,10 +13,7 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
-// Fetch: always go to network, never cache
-self.addEventListener('fetch', e => {
-  e.respondWith(fetch(e.request));
-});
+// No fetch handler — browser handles all requests directly (no SW caching)
 
 // === PUSH NOTIFICATIONS ===
 self.addEventListener('push', e => {
