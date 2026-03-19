@@ -1,4 +1,5 @@
 // === LANGSKOMEN BIJ BART - SERVICE WORKER ===
+// v4
 
 // Install: skip waiting immediately, no caching
 self.addEventListener('install', e => {
@@ -13,7 +14,12 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
-// No fetch handler — browser handles all requests directly (no SW caching)
+// Fetch: bypass HTTP cache for navigation requests so HTML is always fresh
+self.addEventListener('fetch', e => {
+  if (e.request.mode === 'navigate') {
+    e.respondWith(fetch(e.request, { cache: 'no-store' }));
+  }
+});
 
 // === PUSH NOTIFICATIONS ===
 self.addEventListener('push', e => {

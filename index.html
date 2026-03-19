@@ -1196,7 +1196,7 @@ const FUNNY_DECLINES = [
 async function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) return null;
   try {
-    const reg = await navigator.serviceWorker.register('/sw.js?v=3');
+    const reg = await navigator.serviceWorker.register('/sw.js?v=4');
     swRegistration = reg;
     console.log('[PWA] Service Worker registered');
 
