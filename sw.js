@@ -1,30 +1,21 @@
 // === LANGSKOMEN BIJ BART - SERVICE WORKER ===
-const CACHE_NAME = 'bart-v2';
-const ASSETS = ['/', '/index.html', '/manifest.json'];
 
-// Install: cache assets
+// Install: skip waiting immediately, no caching
 self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
-  );
   self.skipWaiting();
 });
 
-// Activate: clean old caches
+// Activate: delete all existing caches
 self.addEventListener('activate', e => {
   e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-    )
+    caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k))))
   );
   self.clients.claim();
 });
 
-// Fetch: serve from cache, fallback to network
+// Fetch: always go to network, never cache
 self.addEventListener('fetch', e => {
-  e.respondWith(
-    caches.match(e.request).then(r => r || fetch(e.request))
-  );
+  e.respondWith(fetch(e.request));
 });
 
 // === PUSH NOTIFICATIONS ===
