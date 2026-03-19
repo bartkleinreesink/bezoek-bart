@@ -14,6 +14,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Bij Bart">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=IBM+Plex+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <style>
   /* ══════════════════════════════════════
@@ -512,6 +513,13 @@
     display: flex; align-items: center; justify-content: center;
     font-size: 0.9rem;
     font-weight: 700;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .avatar img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
   }
 
   .section-tab { display: none; }
@@ -818,19 +826,27 @@
     <div class="card">
       <div class="card-title">👤 Wie ben jij?</div>
       <p style="font-size:0.8rem;color:var(--ink2);margin-bottom:20px;line-height:1.7;">
-        Vul je naam en de toegangscode in zodat Bart weet wie er straks aan de deur staat.
+        Log in met je Google-account zodat Bart weet wie er straks aan de deur staat.
       </p>
-      <input type="text" id="visitorNameInput" placeholder="Jouw naam"
-        style="margin-bottom:12px;"
-        onkeydown="if(event.key==='Enter') document.getElementById('visitorCodeInput').focus()"
-        autocomplete="name">
-      <input type="password" id="visitorCodeInput" placeholder="Toegangscode"
-        style="margin-bottom:12px;"
-        onkeydown="if(event.key==='Enter') loginWithName()">
-      <button class="google-btn" onclick="loginWithName()">
-        <span class="google-logo">👤</span>
-        Verder
-      </button>
+
+      <!-- Google One Tap container -->
+      <div id="g_id_onload"
+        data-client_id="JOUW_GOOGLE_CLIENT_ID_HIER"
+        data-callback="onGoogleLogin"
+        data-auto_prompt="true">
+      </div>
+
+      <!-- Google Sign-In button -->
+      <div class="g_id_signin"
+        data-type="standard"
+        data-size="large"
+        data-theme="outline"
+        data-text="signin_with"
+        data-shape="rectangular"
+        data-logo_alignment="left"
+        data-width="400">
+      </div>
+
       <p id="loginError" style="color:var(--red);font-size:0.72rem;margin-top:10px;min-height:1em;"></p>
     </div>
 
@@ -1444,24 +1460,65 @@ async function loginWithName() {
   renderMyVisits();
 }
 
-function simulateGoogleLogin() { loginWithName(); }
+function simulateGoogleLogin() { /* deprecated */ }
 
-async function loginAsBart() {
-  isBartMode = true;
-  localStorage.setItem('bart_is_bart', 'true');
-  showScreen('bartScreen');
+// Called by Google Identity Services after successful login
+function onGoogleLogin(credentialResponse) {
+  const payload = parseJwt(credentialResponse.credential);
+  if (!payload) {
+    document.getElementById('loginError').textContent = 'Inloggen mislukt. Probeer opnieuw.';
+    return;
+  }
+
+  const name    = payload.name  || payload.given_name || 'Gast';
+  const email   = payload.email || '';
+  const picture = payload.picture || '';
+  const avatar  = name[0].toUpperCase();
+
+  localStorage.setItem('bart_visitor_name',    name);
+  localStorage.setItem('bart_visitor_email',   email);
+  localStorage.setItem('bart_visitor_picture', picture);
+
+  loginAsVisitor({ name, email, avatar, picture });
+}
+
+function parseJwt(token) {
+  try {
+    const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(atob(base64));
+  } catch (e) {
+    return null;
+  }
+}
+
+async function loginAsVisitor({ name, email, avatar, picture }) {
+  currentUser = { name, email, avatar, picture };
+
+  // Update user pill
+  const avatarEl = document.getElementById('userAvatar');
+  if (picture) {
+    avatarEl.innerHTML = `<img src="${picture}" alt="${avatar}">`;
+  } else {
+    avatarEl.textContent = avatar;
+  }
+  document.getElementById('userNameDisplay').textContent = name;
+
   await loadVisits();
-  renderBartVisits();
-  loadIcalField();
-  loadNtfyField();
-  renderBartLocationCard();
+  await loadBartState();
+  renderVisitorBartStatus();
 
-  // Poll for new visits every 30 seconds
-  if (bartPollingInterval) clearInterval(bartPollingInterval);
-  bartPollingInterval = setInterval(async () => {
-    await loadVisits();
-    renderBartVisits();
-  }, 30000);
+  showScreen('visitorScreen');
+  renderMyVisits();
+}
+
+async function loginWithName() {
+  // Kept for backward compat / manual fallback — not shown in UI anymore
+  const name = localStorage.getItem('bart_visitor_name');
+  if (!name) return;
+  const picture = localStorage.getItem('bart_visitor_picture') || '';
+  const avatar  = name[0].toUpperCase();
+  const email   = localStorage.getItem('bart_visitor_email') || '';
+  await loginAsVisitor({ name, email, avatar, picture });
 }
 
 function switchToVisitor() {
@@ -1521,6 +1578,7 @@ async function submitVisit() {
     visitor: currentUser.name,
     email: currentUser.email,
     avatar: currentUser.avatar,
+    picture: currentUser.picture || '',
     date, time, duration, reason, message,
     plusOne: plusOneEnabled,
     plusOneName,
@@ -1674,7 +1732,7 @@ function renderBartVisits() {
         return `<div class="visit-item" style="flex-direction:column;align-items:flex-start;gap:10px">
           <div style="display:flex;justify-content:space-between;width:100%;align-items:center">
             <div>
-              <div class="visit-name">${v.avatar} ${v.visitor}</div>
+              <div class="visit-name">${v.picture ? `<img src="${v.picture}" style="width:20px;height:20px;border-radius:50%;vertical-align:middle;margin-right:4px;">` : v.avatar} ${v.visitor}</div>
               <div class="visit-time">${d} om ${v.time}</div>
             </div>
             <div class="visit-badge badge-pending">⏳ Wacht</div>
@@ -1695,7 +1753,7 @@ function renderBartVisits() {
         const d = new Date(v.date + 'T' + v.time).toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' });
         return `<div class="visit-item">
           <div>
-            <div class="visit-name">${v.avatar} ${v.visitor}${v.plusOne ? ' +1' : ''}</div>
+            <div class="visit-name">${v.picture ? `<img src="${v.picture}" style="width:20px;height:20px;border-radius:50%;vertical-align:middle;margin-right:4px;">` : v.avatar} ${v.visitor}${v.plusOne ? ' +1' : ''}</div>
             <div class="visit-time">${d} ${v.time} · ${v.duration}</div>
           </div>
           <div class="visit-badge badge-yes">✅ Komt!</div>
@@ -1941,13 +1999,19 @@ if (urlParams.get('respond') && urlParams.get('visit')) {
 // Auto-login Bart if stored
 if (window.location.hash === '#bart' || isBartStored) {
   loginAsBart();
-}
-
-// Pre-fill visitor name from localStorage
-const savedVisitorName = localStorage.getItem('bart_visitor_name');
-if (savedVisitorName) {
-  const nameField = document.getElementById('visitorNameInput');
-  if (nameField) nameField.value = savedVisitorName;
+} else {
+  // Auto-restore visitor session if previously logged in via Google
+  const savedName    = localStorage.getItem('bart_visitor_name');
+  const savedEmail   = localStorage.getItem('bart_visitor_email');
+  const savedPicture = localStorage.getItem('bart_visitor_picture');
+  if (savedName) {
+    loginAsVisitor({
+      name:    savedName,
+      email:   savedEmail   || '',
+      avatar:  savedName[0].toUpperCase(),
+      picture: savedPicture || ''
+    });
+  }
 }
 
 // Update notification button states
