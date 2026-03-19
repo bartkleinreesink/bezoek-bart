@@ -918,29 +918,22 @@
     <!-- NTFY SETUP FOR BART -->
     <div class="notif-perm-card show" id="bartNotifCard">
       <h3>🔔 Stel notificaties in</h3>
-      <p>Vul hieronder jouw persoonlijke ntfy-kanaal in. Dit is een geheime naam die alleen jij kent — houd hem dus niet te simpel!</p>
+      <p>Vul hieronder het ntfy-topic in waarop je meldingen wil ontvangen.</p>
       <div style="display:flex;gap:8px;margin-bottom:8px;">
         <div style="flex:1">
-          <label style="color:#D4B896;font-size:0.65rem;margin-bottom:4px;">Jouw geheime kanaal</label>
-          <input type="text" id="ntfyChannel" placeholder="bijv: bart-geheim-1234"
+          <label style="color:#D4B896;font-size:0.65rem;margin-bottom:4px;">Topic</label>
+          <input type="text" id="ntfyChannel" placeholder="bijv: personal-dashboard"
             style="margin-bottom:0;background:#1a1a1a;border-color:#444;color:#F5F2EB;border-radius:0;"
             oninput="saveNtfyChannel()">
         </div>
       </div>
       <p style="font-size:0.68rem;opacity:0.6;margin-bottom:12px;">
-        💡 Kies iets unieks. Iedereen die de naam weet kan berichten zien.
+        💡 Gebruik het topic dat je al in je ntfy app hebt ingesteld.
       </p>
       <button class="notif-perm-btn" id="bartNotifBtn" onclick="testNtfy()">
         📲 Test melding sturen
       </button>
       <p class="notif-status" id="bartNotifStatus"></p>
-
-      <div style="margin-top:16px;padding-top:14px;border-top:1px solid #4A2E1A;font-size:0.68rem;opacity:0.75;line-height:1.8;">
-        <strong style="display:block;margin-bottom:6px;opacity:1;">📱 App installeren (eenmalig):</strong>
-        Android: <a href="https://play.google.com/store/apps/details?id=io.heckel.ntfy" target="_blank" style="color:var(--yellow)">Play Store → ntfy</a><br>
-        iPhone: <a href="https://apps.apple.com/app/ntfy/id1625396347" target="_blank" style="color:var(--yellow)">App Store → ntfy</a><br>
-        Dan: open ntfy → tik "+" → vul jouw kanaalnaam in → klaar!
-      </div>
     </div>
 
     <div class="nav-tabs">
@@ -1250,20 +1243,28 @@ function getNtfyChannel() {
   return localStorage.getItem('bart_ntfy_channel') || '';
 }
 
+const NTFY_URL  = 'https://ntfy.vps.fabrikage.nl';
+const NTFY_AUTH = 'Basic YmFydDpkbWdFSGJzWTlRanA2WQ==';
+
 async function testNtfy() {
   const channel = getNtfyChannel();
   const status = document.getElementById('bartNotifStatus');
   if (!channel) {
-    status.textContent = '⚠️ Vul eerst een kanaalnaam in!';
+    status.textContent = '⚠️ Vul eerst een topic in!';
     return;
   }
   status.textContent = '⏳ Testmelding sturen...';
   try {
-    await fetch(`https://ntfy.sh/${encodeURIComponent(channel)}`, {
+    const res = await fetch(`${NTFY_URL}/${encodeURIComponent(channel)}`, {
       method: 'POST',
-      headers: { 'Title': '🚪 Test - Langskomen bij Bart', 'Tags': 'white_check_mark' },
+      headers: {
+        'Authorization': NTFY_AUTH,
+        'Title': '🚪 Test - Langskomen bij Bart',
+        'Tags': 'white_check_mark'
+      },
       body: 'Als je dit ziet werkt alles! 🎉'
     });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     status.textContent = '✅ Testmelding verstuurd! Check je ntfy app.';
   } catch (e) {
     status.textContent = '❌ Mislukt: ' + e.message;
@@ -1277,9 +1278,10 @@ async function sendNtfyNotification(visit) {
   const plusTxt = visit.plusOne ? `\n👥 +1: ${visit.plusOneName || 'iemand'}` : '';
   const msgTxt  = visit.message ? `\n💬 "${visit.message}"` : '';
   try {
-    await fetch(`https://ntfy.sh/${encodeURIComponent(channel)}`, {
+    await fetch(`${NTFY_URL}/${encodeURIComponent(channel)}`, {
       method: 'POST',
       headers: {
+        'Authorization': NTFY_AUTH,
         'Title': `🚪 ${visit.visitor} wil langskomen!`,
         'Priority': 'high',
         'Tags': 'door,bell',
@@ -1292,9 +1294,10 @@ async function sendNtfyNotification(visit) {
 
 // Load saved ntfy channel into field
 function loadNtfyField() {
-  const saved = getNtfyChannel();
+  const saved = getNtfyChannel() || 'personal-dashboard';
   const field = document.getElementById('ntfyChannel');
-  if (field && saved) field.value = saved;
+  if (field) field.value = saved;
+  if (!getNtfyChannel()) localStorage.setItem('bart_ntfy_channel', 'personal-dashboard');
 }
 
 // ==========================================
