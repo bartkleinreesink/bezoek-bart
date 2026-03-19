@@ -1262,7 +1262,7 @@ async function testNtfy() {
       method: 'POST',
       headers: {
         'Authorization': NTFY_AUTH,
-        'Title': '🚪 Test - Langskomen bij Bart',
+        'Title': 'Test - Langskomen bij Bart',
         'Tags': 'white_check_mark'
       },
       body: 'Als je dit ziet werkt alles! 🎉'
@@ -1285,7 +1285,7 @@ async function sendNtfyNotification(visit) {
       method: 'POST',
       headers: {
         'Authorization': NTFY_AUTH,
-        'Title': `🚪 ${visit.visitor} wil langskomen!`,
+        'Title': `${visit.visitor} wil langskomen!`,
         'Priority': 'high',
         'Tags': 'door,bell',
         'Click': window.location.origin + '/#bart',
