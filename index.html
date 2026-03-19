@@ -6,6 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<meta name="robots" content="noindex, nofollow">
 <title>🚪 Langskomen bij Bart</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0A0A0A">
@@ -798,15 +799,20 @@
     <div class="card">
       <div class="card-title">👤 Wie ben jij?</div>
       <p style="font-size:0.8rem;color:var(--ink2);margin-bottom:20px;line-height:1.7;">
-        Voordat je stiekem bij Bart aanklopt, moet je even bewijzen dat je een echt mens bent en geen pizza bezorger.
+        Vul je naam en de toegangscode in zodat Bart weet wie er straks aan de deur staat.
       </p>
-      <button class="google-btn" onclick="simulateGoogleLogin()">
-        <span class="google-logo">🔵</span>
-        Inloggen met Google
+      <input type="text" id="visitorNameInput" placeholder="Jouw naam"
+        style="margin-bottom:12px;"
+        onkeydown="if(event.key==='Enter') document.getElementById('visitorCodeInput').focus()"
+        autocomplete="name">
+      <input type="password" id="visitorCodeInput" placeholder="Toegangscode"
+        style="margin-bottom:12px;"
+        onkeydown="if(event.key==='Enter') loginWithName()">
+      <button class="google-btn" onclick="loginWithName()">
+        <span class="google-logo">👤</span>
+        Verder
       </button>
-      <p class="funny-text">
-        We gebruiken jouw Google account alleen om<br>te weten wie er straks aan de deur staat. 🕵️
-      </p>
+      <p id="loginError" style="color:var(--red);font-size:0.72rem;margin-top:10px;min-height:1em;"></p>
     </div>
 
     <div class="rules-box">
@@ -1310,21 +1316,37 @@ function saveVisits() {
   localStorage.setItem('bart_visits', JSON.stringify(visits));
 }
 
-function simulateGoogleLogin() {
-  const names = ['Sander de Groot', 'Lisa van Dijk', 'Kees Janssen', 'Emma Bakker', 'Pieter Smits', 'Noor de Vries', 'Tom Willems'];
-  const randomName = names[Math.floor(Math.random() * names.length)];
+const VISITOR_CODE_HASH = '5ba38c9dc42999c432ea9a7c32acb4bfad247bc7581c32de5be47b848ae41475';
 
-  currentUser = {
-    name: randomName,
-    email: randomName.toLowerCase().replace(' ', '.') + '@gmail.com',
-    avatar: randomName[0]
-  };
+async function loginWithName() {
+  const nameInput = document.getElementById('visitorNameInput');
+  const codeInput = document.getElementById('visitorCodeInput');
+  const error = document.getElementById('loginError');
+  const name = nameInput.value.trim();
+  const code = codeInput.value.trim();
 
+  if (!name) { error.textContent = 'Vul je naam in.'; return; }
+  if (!code) { error.textContent = 'Vul de toegangscode in.'; return; }
+
+  const codeHash = await hashPin(code);
+  if (codeHash !== VISITOR_CODE_HASH) {
+    error.textContent = 'Verkeerde toegangscode.';
+    codeInput.value = '';
+    codeInput.focus();
+    return;
+  }
+
+  error.textContent = '';
+  localStorage.setItem('bart_visitor_name', name);
+
+  currentUser = { name, email: '', avatar: name[0].toUpperCase() };
   document.getElementById('userAvatar').textContent = currentUser.avatar;
   document.getElementById('userNameDisplay').textContent = currentUser.name;
   showScreen('visitorScreen');
   renderMyVisits();
 }
+
+function simulateGoogleLogin() { loginWithName(); }
 
 function loginAsBart() {
   isBartMode = true;
@@ -1735,6 +1757,13 @@ if (urlParams.get('respond') && urlParams.get('visit')) {
 // Auto-login Bart if stored
 if (window.location.hash === '#bart' || isBartStored) {
   loginAsBart();
+}
+
+// Pre-fill visitor name from localStorage
+const savedVisitorName = localStorage.getItem('bart_visitor_name');
+if (savedVisitorName) {
+  const nameField = document.getElementById('visitorNameInput');
+  if (nameField) nameField.value = savedVisitorName;
 }
 
 // Update notification button states
