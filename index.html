@@ -1331,9 +1331,7 @@ function loginAsBart() {
   loadIcalField();
   loadNtfyField();
 
-  // Hide ntfy card if channel already set
   const channel = getNtfyChannel();
-  if (channel) document.getElementById('bartNotifCard').style.display = 'none';
 }
 
 function switchToVisitor() {
@@ -1742,7 +1740,6 @@ if (typeof Notification !== 'undefined' && Notification.permission === 'granted'
     const btn = document.getElementById(id);
     if (btn) { btn.textContent = '✅ Notificaties aan!'; btn.disabled = true; btn.style.background = 'var(--green)'; }
   });
-  if (document.getElementById('bartNotifCard')) document.getElementById('bartNotifCard').style.display = 'none';
 } else if (typeof Notification !== 'undefined' && Notification.permission === 'denied') {
   ['notifPermBtn', 'bartNotifBtn'].forEach(id => {
     const btn = document.getElementById(id);
