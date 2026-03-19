@@ -1554,6 +1554,17 @@ function switchToVisitor() {
   showScreen('loginScreen');
 }
 
+async function loginAsBart() {
+  isBartMode = true;
+  localStorage.setItem('bart_is_bart', 'true');
+  try { await loadVisits(); }    catch (e) { console.warn('[loginAsBart] loadVisits:', e); }
+  try { await loadBartState(); } catch (e) { console.warn('[loginAsBart] loadBartState:', e); }
+  showScreen('bartScreen');
+  window.scrollTo(0, 0);
+  loadIcalField();
+  renderBartVisits();
+}
+
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
