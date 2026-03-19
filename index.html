@@ -1734,13 +1734,13 @@ if (window.location.hash === '#bart' || isBartStored) {
 }
 
 // Update notification button states
-if (Notification.permission === 'granted') {
+if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
   ['notifPermBtn', 'bartNotifBtn'].forEach(id => {
     const btn = document.getElementById(id);
     if (btn) { btn.textContent = '✅ Notificaties aan!'; btn.disabled = true; btn.style.background = 'var(--green)'; }
   });
   if (document.getElementById('bartNotifCard')) document.getElementById('bartNotifCard').style.display = 'none';
-} else if (Notification.permission === 'denied') {
+} else if (typeof Notification !== 'undefined' && Notification.permission === 'denied') {
   ['notifPermBtn', 'bartNotifBtn'].forEach(id => {
     const btn = document.getElementById(id);
     if (btn) { btn.textContent = '🚫 Notificaties geblokkeerd'; btn.disabled = true; }

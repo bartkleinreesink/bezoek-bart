@@ -1,5 +1,5 @@
 // === LANGSKOMEN BIJ BART - SERVICE WORKER ===
-const CACHE_NAME = 'bart-v1';
+const CACHE_NAME = 'bart-v2';
 const ASSETS = ['/', '/index.html', '/manifest.json'];
 
 // Install: cache assets
