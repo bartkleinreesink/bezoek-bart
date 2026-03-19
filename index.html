@@ -743,6 +743,25 @@
   }
 
   /* ══════════════════════════════════════
+     LOCATION BUTTONS
+  ══════════════════════════════════════ */
+  .location-btn {
+    padding: 11px 8px;
+    background: var(--bg2);
+    border: 2px solid var(--border);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+    color: var(--ink);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: background 0.1s;
+  }
+  .location-btn:hover { background: var(--surface); }
+  .location-btn.active { background: var(--ink); color: var(--bg); }
+
+  /* ══════════════════════════════════════
      RESPONSIVE
   ══════════════════════════════════════ */
   @media (max-width: 400px) {
@@ -831,6 +850,20 @@
     <div class="user-pill" id="userPill">
       <div class="avatar" id="userAvatar">?</div>
       <span id="userNameDisplay">Niet ingelogd</span>
+    </div>
+
+    <!-- BART STATUS BANNER (loaded from API) -->
+    <div id="visitorBartStatusBanner" style="display:none;background:var(--ink);color:var(--bg);border:3px solid var(--border);padding:14px 18px;margin-bottom:20px;font-size:0.76rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;display:flex;align-items:center;gap:10px;box-shadow:5px 5px 0 var(--shadow);">
+      <div class="status-dot"></div>
+      <span id="visitorBartStatusText">Bart is thuis</span>
+    </div>
+
+    <!-- DONATION LINK -->
+    <div style="text-align:center;margin-bottom:16px;">
+      <a href="https://bunq.me/BachSoftware" target="_blank" rel="noopener"
+        style="font-size:0.65rem;color:var(--ink3);text-decoration:underline;letter-spacing:0.08em;text-transform:uppercase;">
+        ☕ Trakteer Bart op een koffie
+      </a>
     </div>
 
     <div class="nav-tabs">
@@ -943,6 +976,24 @@
         📲 Test melding sturen
       </button>
       <p class="notif-status" id="bartNotifStatus"></p>
+    </div>
+
+    <!-- BART LOCATIE CARD -->
+    <div class="card" id="bartLocationCard">
+      <div class="card-title">📍 Waar ben jij?</div>
+      <div id="bartLocationBtns" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+        <button class="location-btn" onclick="setBartLocation('thuis')">🏠 Thuis</button>
+        <button class="location-btn" onclick="setBartLocation('buiten')">🌳 Buiten</button>
+        <button class="location-btn" onclick="setBartLocation('werk')">💼 Op het werk</button>
+        <button class="location-btn" onclick="setBartLocation('niet-beschikbaar')">🚫 Niet beschikbaar</button>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="bartLocationCustom" placeholder="Of typ iets anders..."
+          style="margin-bottom:0;flex:1;"
+          onkeydown="if(event.key==='Enter') setBartLocationCustom()">
+        <button class="toggle-btn" onclick="setBartLocationCustom()" style="white-space:nowrap;">Opslaan</button>
+      </div>
+      <p id="bartLocationStatus" style="font-size:0.68rem;margin-top:8px;color:var(--ink2);min-height:1em;"></p>
     </div>
 
     <div class="nav-tabs">
@@ -1064,12 +1115,20 @@
 let currentUser = null;
 let isBartMode = false;
 let plusOneEnabled = false;
-let pendingVisitIndex = null;
+let pendingVisitId = null;
 let deferredInstallPrompt = null;
 let swRegistration = null;
+let bartPollingInterval = null;
+let bartState = { location: 'thuis', custom: '' };
 
-const visits = JSON.parse(localStorage.getItem('bart_visits') || '[]');
+let visits = [];
 const isBartStored = localStorage.getItem('bart_is_bart') === 'true';
+
+// ==========================================
+// API
+// ==========================================
+const API_URL = 'https://bezoek-api.vps.fabrikage.nl';
+const API_KEY  = 'ab4b4ef97ae69ce90fd902e08bd0743b807b68eb';
 
 const BART_STATUS = [
   'Bart is thuis (waarschijnlijk)',
@@ -1294,7 +1353,7 @@ async function sendNtfyNotification(visit) {
         'Title': `${visit.visitor} wil langskomen!`,
         'Priority': 'high',
         'Tags': 'door,bell',
-        'Click': window.location.origin + '/#bart',
+        'Click': window.location.href.split('#')[0] + '#bart',
       },
       body: `📅 ${dateStr} om ${visit.time}\n⏱ ${visit.duration}${plusTxt}${msgTxt}`
     });
@@ -1312,11 +1371,45 @@ function loadNtfyField() {
 // ==========================================
 // APP LOGIC
 // ==========================================
-function saveVisits() {
-  localStorage.setItem('bart_visits', JSON.stringify(visits));
+const VISITOR_CODE_HASH = '5ba38c9dc42999c432ea9a7c32acb4bfad247bc7581c32de5be47b848ae41475';
+
+async function loadVisits() {
+  try {
+    const res = await fetch(`${API_URL}/visits`, {
+      headers: { 'x-api-key': API_KEY }
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    visits = await res.json();
+  } catch (e) {
+    console.warn('[API] loadVisits failed:', e);
+  }
 }
 
-const VISITOR_CODE_HASH = '5ba38c9dc42999c432ea9a7c32acb4bfad247bc7581c32de5be47b848ae41475';
+async function loadBartState() {
+  try {
+    const res = await fetch(`${API_URL}/state`, {
+      headers: { 'x-api-key': API_KEY }
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    bartState = await res.json();
+  } catch (e) {
+    console.warn('[API] loadBartState failed:', e);
+  }
+}
+
+async function saveBartState(data) {
+  try {
+    const res = await fetch(`${API_URL}/state`, {
+      method: 'PATCH',
+      headers: { 'x-api-key': API_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    bartState = await res.json();
+  } catch (e) {
+    console.warn('[API] saveBartState failed:', e);
+  }
+}
 
 async function loginWithName() {
   const nameInput = document.getElementById('visitorNameInput');
@@ -1342,21 +1435,33 @@ async function loginWithName() {
   currentUser = { name, email: '', avatar: name[0].toUpperCase() };
   document.getElementById('userAvatar').textContent = currentUser.avatar;
   document.getElementById('userNameDisplay').textContent = currentUser.name;
+
+  await loadVisits();
+  await loadBartState();
+  renderVisitorBartStatus();
+
   showScreen('visitorScreen');
   renderMyVisits();
 }
 
 function simulateGoogleLogin() { loginWithName(); }
 
-function loginAsBart() {
+async function loginAsBart() {
   isBartMode = true;
   localStorage.setItem('bart_is_bart', 'true');
   showScreen('bartScreen');
+  await loadVisits();
   renderBartVisits();
   loadIcalField();
   loadNtfyField();
+  renderBartLocationCard();
 
-  const channel = getNtfyChannel();
+  // Poll for new visits every 30 seconds
+  if (bartPollingInterval) clearInterval(bartPollingInterval);
+  bartPollingInterval = setInterval(async () => {
+    await loadVisits();
+    renderBartVisits();
+  }, 30000);
 }
 
 function switchToVisitor() {
@@ -1399,7 +1504,7 @@ function toggleBartStatus() {
   document.getElementById('statusText').textContent = BART_STATUS[statusIdx];
 }
 
-function submitVisit() {
+async function submitVisit() {
   const date = document.getElementById('visitDate').value;
   const time = document.getElementById('visitTime').value;
   const duration = document.getElementById('visitDuration').value;
@@ -1413,7 +1518,6 @@ function submitVisit() {
   }
 
   const visit = {
-    id: Date.now(),
     visitor: currentUser.name,
     email: currentUser.email,
     avatar: currentUser.avatar,
@@ -1424,24 +1528,32 @@ function submitVisit() {
     submitted: new Date().toISOString()
   };
 
-  visits.unshift(visit);
-  saveVisits();
+  try {
+    const res = await fetch(`${API_URL}/visits`, {
+      method: 'POST',
+      headers: { 'x-api-key': API_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify(visit)
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const saved = await res.json();
+    visits.unshift(saved);
+  } catch (e) {
+    console.warn('[API] submitVisit failed:', e);
+    // Fallback: add locally so the user sees their request
+    visit.id = Date.now();
+    visits.unshift(visit);
+  }
 
   // Stuur ntfy pushmelding naar Bart
   sendNtfyNotification(visit);
-
-  // Show in-app notification after short delay (simulating Bart seeing it)
-  setTimeout(() => {
-    showInAppNotification(visit, 0);
-  }, 1000);
 
   showResponseOverlay('📬', 'Aanvraag verstuurd!',
     `Bart heeft je melding ontvangen op zijn telefoon, smartwatch, laptop, koelkast, en magnetron. Hij reageert zo snel als hij wil (of nooit). 🤷`
   );
 }
 
-function showInAppNotification(visit, idx) {
-  pendingVisitIndex = idx;
+function showInAppNotification(visit) {
+  pendingVisitId = visit.id;
   const dateStr = new Date(visit.date + 'T' + visit.time).toLocaleDateString('nl-NL', {
     weekday: 'long', day: 'numeric', month: 'long'
   });
@@ -1466,18 +1578,28 @@ function showInAppNotification(visit, idx) {
 
 function respondToVisit(response) {
   document.getElementById('notifOverlay').classList.add('hidden');
-  if (pendingVisitIndex === null) return;
+  if (pendingVisitId === null) return;
 
-  handleVisitResponse(visits[pendingVisitIndex]?.id, response);
-  pendingVisitIndex = null;
+  handleVisitResponse(pendingVisitId, response);
+  pendingVisitId = null;
 }
 
-function handleVisitResponse(visitId, response) {
-  const idx = visits.findIndex(v => v.id == visitId);
-  if (idx === -1) return;
+async function handleVisitResponse(visitId, response) {
+  const v = visits.find(v => String(v.id) === String(visitId));
+  const newStatus = response === 'yes' ? 'accepted' : 'declined';
 
-  visits[idx].status = response === 'yes' ? 'accepted' : 'declined';
-  saveVisits();
+  try {
+    const res = await fetch(`${API_URL}/visits/${visitId}`, {
+      method: 'PATCH',
+      headers: { 'x-api-key': API_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus })
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+  } catch (e) {
+    console.warn('[API] handleVisitResponse failed:', e);
+  }
+
+  if (v) v.status = newStatus;
 
   if (response === 'yes') {
     showResponseOverlay('🎉', 'Bart zegt JA!', FUNNY_ACCEPTS[Math.floor(Math.random() * FUNNY_ACCEPTS.length)]);
@@ -1499,6 +1621,21 @@ function showResponseOverlay(emoji, title, body) {
 
 function closeResponse() {
   document.getElementById('responseOverlay').classList.add('hidden');
+}
+
+function renderVisitorBartStatus() {
+  const locationMap = {
+    'thuis': 'Bart is thuis',
+    'buiten': 'Bart is buiten',
+    'werk': 'Bart is op het werk',
+    'niet-beschikbaar': 'Bart is niet beschikbaar'
+  };
+  const banner = document.getElementById('visitorBartStatusBanner');
+  const text = document.getElementById('visitorBartStatusText');
+  if (!banner || !text) return;
+  const loc = bartState?.location || 'thuis';
+  text.textContent = locationMap[loc] || loc;
+  banner.style.display = 'flex';
 }
 
 function renderMyVisits() {
@@ -1545,8 +1682,8 @@ function renderBartVisits() {
           ${v.message ? `<div style="font-size:0.75rem;color:var(--ink2);font-style:italic">"${v.message}"</div>` : ''}
           ${v.plusOne ? `<div style="font-size:0.72rem;">👥 +1: ${v.plusOneName || 'iemand'}</div>` : ''}
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%">
-            <button class="btn-yes" style="font-size:0.8rem;padding:10px" onclick="quickRespond(${visits.indexOf(v)}, 'yes')">✅ Ja!</button>
-            <button class="btn-no" style="font-size:0.8rem;padding:10px" onclick="quickRespond(${visits.indexOf(v)}, 'no')">❌ Nee</button>
+            <button class="btn-yes" style="font-size:0.8rem;padding:10px" onclick="quickRespond('${v.id}', 'yes')">✅ Ja!</button>
+            <button class="btn-no" style="font-size:0.8rem;padding:10px" onclick="quickRespond('${v.id}', 'no')">❌ Nee</button>
           </div>
         </div>`;
       }).join('');
@@ -1566,14 +1703,61 @@ function renderBartVisits() {
       }).join('');
 }
 
-function quickRespond(idx, response) {
-  visits[idx].status = response === 'yes' ? 'accepted' : 'declined';
-  saveVisits();
+async function quickRespond(id, response) {
+  const v = visits.find(v => String(v.id) === String(id));
+  if (!v) return;
+  const newStatus = response === 'yes' ? 'accepted' : 'declined';
+  try {
+    const res = await fetch(`${API_URL}/visits/${id}`, {
+      method: 'PATCH',
+      headers: { 'x-api-key': API_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus })
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    v.status = newStatus;
+  } catch (e) {
+    console.warn('[API] quickRespond failed:', e);
+    v.status = newStatus; // optimistic update
+  }
   renderBartVisits();
   if (response === 'yes') triggerConfetti();
 }
 
-function triggerConfetti() {
+function renderBartLocationCard() {
+  const locationMap = {
+    'thuis': '🏠 Thuis',
+    'buiten': '🌳 Buiten',
+    'werk': '💼 Op het werk',
+    'niet-beschikbaar': '🚫 Niet beschikbaar'
+  };
+  document.querySelectorAll('.location-btn').forEach(btn => btn.classList.remove('active'));
+  const loc = bartState?.location || 'thuis';
+  const matchBtn = [...document.querySelectorAll('.location-btn')].find(b => b.getAttribute('onclick') === `setBartLocation('${loc}')`);
+  if (matchBtn) matchBtn.classList.add('active');
+
+  const customField = document.getElementById('bartLocationCustom');
+  if (customField && !locationMap[loc]) customField.value = loc;
+
+  const status = document.getElementById('bartLocationStatus');
+  const display = locationMap[loc] || loc;
+  if (status) status.textContent = `Huidige status: ${display}`;
+}
+
+async function setBartLocation(location) {
+  await saveBartState({ location });
+  renderBartLocationCard();
+  document.getElementById('bartLocationStatus').textContent = 'Opgeslagen!';
+}
+
+async function setBartLocationCustom() {
+  const val = document.getElementById('bartLocationCustom').value.trim();
+  if (!val) return;
+  await saveBartState({ location: val });
+  renderBartLocationCard();
+  document.getElementById('bartLocationStatus').textContent = 'Opgeslagen!';
+}
+
+
   const colors = ['#E85D04', '#FFB703', '#2D6A4F', '#2C1A0E', '#9B2226'];
   for (let i = 0; i < 40; i++) {
     const div = document.createElement('div');
