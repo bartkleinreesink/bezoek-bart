@@ -27,9 +27,9 @@
     --ink:       #0E0E0E;
     --ink2:      #3A3A3A;
     --ink3:      #5A5A5A;   /* was #888 — now 7.2:1 on --bg */
-    --border:    #0E0E0E;
-    --shadow:    #0E0E0E;
-    --yellow:    #FFE500;
+    --border:    #3D3D3D;   /* was #0E0E0E — softened to dark gray */
+    --shadow:    #505050;   /* was #0E0E0E — softened to medium-dark gray */
+    --yellow:    #EDCA00;   /* was #FFE500 — muted to softer gold */
     --red:       #C8180A;   /* darker red for better contrast on white */
     --green:     #006B2E;   /* darker green for better contrast on white */
     --safe-top:    env(safe-area-inset-top, 0px);
@@ -44,9 +44,9 @@
     --ink:       #F0EDE4;
     --ink2:      #C8C4BB;   /* was #BBB — better contrast on dark */
     --ink3:      #8A8A8A;   /* was #666 — better contrast on #111 */
-    --border:    #F0EDE4;
-    --shadow:    #000000;
-    --yellow:    #FFE500;
+    --border:    #A09890;   /* was #F0EDE4 — muted warm gray instead of near-white */
+    --shadow:    #0A0A0A;   /* stays near-black on dark bg */
+    --yellow:    #EDCA00;   /* was #FFE500 — muted to softer gold */
     --red:       #FF4D35;   /* brighter for dark bg */
     --green:     #00D65A;   /* brighter for dark bg */
   }
@@ -60,9 +60,9 @@
       --ink:       #F0EDE4;
       --ink2:      #C8C4BB;
       --ink3:      #8A8A8A;
-      --border:    #F0EDE4;
-      --shadow:    #000000;
-      --yellow:    #FFE500;
+      --border:    #A09890;
+      --shadow:    #0A0A0A;
+      --yellow:    #EDCA00;
       --red:       #FF4D35;
       --green:     #00D65A;
     }
@@ -175,7 +175,7 @@
   ══════════════════════════════════════ */
   .header {
     padding: 28px 0 28px;
-    border-bottom: 4px solid var(--border);
+    border-bottom: 2px solid var(--border);
     margin-bottom: 28px;
   }
 
@@ -267,7 +267,7 @@
   ══════════════════════════════════════ */
   .card {
     background: var(--surface);
-    border: 3px solid var(--border);
+    border: 2px solid var(--border);
     padding: 22px 20px;
     margin-bottom: 20px;
     box-shadow: 5px 5px 0 var(--shadow);
@@ -281,7 +281,7 @@
     text-transform: uppercase;
     margin-bottom: 18px;
     padding-bottom: 10px;
-    border-bottom: 2px solid var(--border);
+    border-bottom: 1px solid var(--border);
     color: var(--ink);
   }
 
@@ -291,7 +291,7 @@
   .notif-perm-card {
     background: var(--ink);
     color: var(--bg);
-    border: 3px solid var(--border);
+    border: 2px solid var(--border);
     padding: 20px;
     margin-bottom: 20px;
     display: none;
@@ -339,7 +339,7 @@
     width: 100%;
     padding: 15px;
     background: var(--surface);
-    border: 3px solid var(--border);
+    border: 2px solid var(--border);
     font-family: 'IBM Plex Mono', monospace;
     font-size: 0.82rem;
     font-weight: 700;
@@ -433,7 +433,7 @@
     padding: 17px;
     background: var(--yellow);
     color: #111;
-    border: 3px solid var(--border);
+    border: 2px solid var(--border);
     font-family: 'Anton', sans-serif;
     font-size: 1.3rem;
     font-weight: 400;
@@ -443,7 +443,7 @@
     box-shadow: 5px 5px 0 var(--shadow);
     transition: transform 0.1s, box-shadow 0.1s;
   }
-  .submit-btn:hover  { transform: translate(-2px,-2px); box-shadow: 8px 8px 0 var(--shadow); }
+  .submit-btn:hover  { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--shadow); }
   .submit-btn:active { transform: translate(3px,3px);  box-shadow: 1px 1px 0 var(--shadow); }
 
   /* ══════════════════════════════════════
@@ -451,7 +451,7 @@
   ══════════════════════════════════════ */
   .rules-box {
     background: var(--yellow);
-    border: 3px solid var(--border);
+    border: 2px solid var(--border);
     padding: 18px 20px;
     margin-bottom: 20px;
     font-size: 0.76rem;
@@ -468,7 +468,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     margin-bottom: 20px;
-    border: 3px solid var(--border);
+    border: 2px solid var(--border);
     overflow: hidden;
   }
   .nav-tab {
@@ -581,11 +581,11 @@
 
   .notification-card {
     background: var(--surface);
-    border: 4px solid var(--border);
+    border: 3px solid var(--border);
     padding: 30px 24px;
     max-width: 400px;
     width: 100%;
-    box-shadow: 10px 10px 0 var(--shadow);
+    box-shadow: 6px 6px 0 var(--shadow);
     text-align: center;
     animation: popIn 0.25s cubic-bezier(0.34, 1.4, 0.64, 1);
   }
@@ -872,12 +872,19 @@
 
     <div class="rules-box">
       <strong>📋 De Officiële Regels van Bart's Huis</strong>
-      ✅ Altijd minstens 48 uur van tevoren aanvragen<br>
+      ✅ Altijd minstens 8 uur van tevoren aanvragen<br>
       ✅ Geen verrassingen (Bart houdt niet van verrassingen)<br>
       ✅ Meenemen: snacks, goede verhalen, of beide<br>
       ❌ Niet langskomen op zondag voor 12:00<br>
       ❌ Niet meer dan 3 mensen tegelijk (inclusief jijzelf)<br>
       ❌ Geen verborgen agenda's (we kijken naar jou, Jan)
+    </div>
+
+    <div style="text-align:center;margin-bottom:16px;">
+      <a href="https://bunq.me/BachSoftware" target="_blank" rel="noopener"
+        style="font-size:0.65rem;color:var(--ink3);text-decoration:underline;letter-spacing:0.08em;text-transform:uppercase;">
+        ☕ Trakteer Bart op een koffie
+      </a>
     </div>
   </div>
 
@@ -886,6 +893,7 @@
     <div class="user-pill" id="userPill">
       <div class="avatar" id="userAvatar">?</div>
       <span id="userNameDisplay">Niet ingelogd</span>
+      <button onclick="logout()" style="background:none;border:none;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--bg);opacity:0.6;padding:0 0 0 8px;border-left:1px solid rgba(255,255,255,0.2);margin-left:4px;" title="Uitloggen">✕ UIT</button>
     </div>
 
     <!-- BART STATUS BANNER (loaded from API) -->
@@ -1197,7 +1205,7 @@ const FUNNY_DECLINES = [
 async function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) return null;
   try {
-    const reg = await navigator.serviceWorker.register('/sw.js');
+    const reg = await navigator.serviceWorker.register('/sw.js?v=2');
     swRegistration = reg;
     console.log('[PWA] Service Worker registered');
 
@@ -1554,6 +1562,18 @@ function switchToVisitor() {
   showScreen('loginScreen');
 }
 
+function logout() {
+  currentUser = null;
+  localStorage.removeItem('bart_visitor_name');
+  localStorage.removeItem('bart_visitor_email');
+  localStorage.removeItem('bart_visitor_picture');
+  if (typeof google !== 'undefined' && google.accounts) {
+    google.accounts.id.disableAutoSelect();
+  }
+  showScreen('loginScreen');
+  showToast('Je bent uitgelogd.');
+}
+
 async function loginAsBart() {
   isBartMode = true;
   localStorage.setItem('bart_is_bart', 'true');
@@ -1605,6 +1625,19 @@ function togglePlusOne() {
 function toggleBartStatus() {
   statusIdx = (statusIdx + 1) % BART_STATUS.length;
   document.getElementById('statusText').textContent = BART_STATUS[statusIdx];
+}
+
+function renderHeaderStatus() {
+  const locationMap = {
+    'thuis':            'Bart is thuis',
+    'buiten':           'Bart is buiten',
+    'werk':             'Bart is op het werk',
+    'niet-beschikbaar': 'Bart is niet beschikbaar'
+  };
+  const loc = bartState?.location;
+  if (!loc) return;
+  const el = document.getElementById('statusText');
+  if (el) el.textContent = locationMap[loc] || `Bart is ${loc}`;
 }
 
 async function submitVisit() {
@@ -1740,6 +1773,7 @@ function renderVisitorBartStatus() {
   const loc = bartState?.location || 'thuis';
   text.textContent = locationMap[loc] || loc;
   banner.style.display = 'flex';
+  renderHeaderStatus();
 }
 
 function renderMyVisits() {
@@ -1845,6 +1879,7 @@ function renderBartLocationCard() {
   const status = document.getElementById('bartLocationStatus');
   const display = locationMap[loc] || loc;
   if (status) status.textContent = `Huidige status: ${display}`;
+  renderHeaderStatus();
 }
 
 async function setBartLocation(location) {
@@ -2193,7 +2228,10 @@ function renderGoogleButton() {
     width: w,
   });
 }
-document.addEventListener('DOMContentLoaded', renderGoogleButton);
+document.addEventListener('DOMContentLoaded', () => {
+  renderGoogleButton();
+  loadBartState().then(renderHeaderStatus);
+});
 
 // ==========================================
 // BOOT
