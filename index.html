@@ -777,9 +777,36 @@
     .notif-buttons { grid-template-columns: 1fr; }
     .inline-row { grid-template-columns: 1fr; }
   }
+
+  /* Toast */
+  #toast {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--green);
+    color: #fff;
+    font-size: 0.88rem;
+    font-weight: 600;
+    padding: 12px 22px;
+    border-radius: 50px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.18);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s, transform 0.25s;
+    z-index: 9999;
+    white-space: nowrap;
+  }
+  #toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 </style>
 </head>
 <body>
+
+<!-- TOAST -->
+<div id="toast"></div>
 
 <!-- INSTALL BANNER -->
 <div class="install-banner" id="installBanner">
@@ -833,7 +860,8 @@
       <div id="g_id_onload"
         data-client_id="1035030458616-hdq07pg0jlgkmjkk3i6i9lb3mce7p2hd.apps.googleusercontent.com"
         data-callback="onGoogleLogin"
-        data-auto_prompt="true">
+        data-auto_prompt="true"
+        data-ux_mode="popup">
       </div>
 
       <!-- Google Sign-In button -->
@@ -1513,6 +1541,8 @@ async function loginAsVisitor({ name, email, avatar, picture }) {
 
   renderVisitorBartStatus();
   showScreen('visitorScreen');
+  window.scrollTo(0, 0);
+  showToast('Welkom, ' + name + '!');
   renderMyVisits();
 }
 
@@ -1535,6 +1565,14 @@ function switchToVisitor() {
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+}
+
+function showToast(msg, duration = 3000) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._timer);
+  el._timer = setTimeout(() => el.classList.remove('show'), duration);
 }
 
 function switchTab(tab, btn) {
