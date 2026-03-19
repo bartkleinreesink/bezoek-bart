@@ -864,16 +864,8 @@
         data-ux_mode="popup">
       </div>
 
-      <!-- Google Sign-In button -->
-      <div class="g_id_signin"
-        data-type="standard"
-        data-size="large"
-        data-theme="outline"
-        data-text="signin_with"
-        data-shape="rectangular"
-        data-logo_alignment="left"
-        data-width="400">
-      </div>
+      <!-- Google Sign-In button (rendered programmatically for responsive width) -->
+      <div id="googleSignInBtn"></div>
 
       <p id="loginError" style="color:var(--red);font-size:0.72rem;margin-top:10px;min-height:1em;"></p>
     </div>
@@ -2169,6 +2161,28 @@ function applyTheme(mode) {
 
 // Boot theme immediately (avoids flash)
 applyTheme(localStorage.getItem('bart_theme') || 'auto');
+
+// Render Google Sign-In button with responsive width
+// Polls until google.accounts is available (async script)
+function renderGoogleButton() {
+  if (typeof google === 'undefined' || !google.accounts) {
+    setTimeout(renderGoogleButton, 150);
+    return;
+  }
+  const container = document.getElementById('googleSignInBtn');
+  if (!container) return;
+  const w = Math.min(Math.max(container.offsetWidth || 280, 200), 400);
+  google.accounts.id.renderButton(container, {
+    type: 'standard',
+    size: 'large',
+    theme: 'outline',
+    text: 'signin_with',
+    shape: 'rectangular',
+    logo_alignment: 'left',
+    width: w,
+  });
+}
+document.addEventListener('DOMContentLoaded', renderGoogleButton);
 
 // ==========================================
 // BOOT
