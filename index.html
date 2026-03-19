@@ -840,16 +840,7 @@
   <!-- LOGIN SCREEN -->
   <div id="loginScreen" class="screen active">
 
-    <!-- PUSH PERMISSION CARD (shown after login) -->
-    <div class="notif-perm-card" id="notifPermCard">
-      <h3>🔔 Zet notificaties aan</h3>
-      <p>Als Bart wil je een melding ontvangen zodra iemand wil langskomen — ook als de app gesloten is. Zet dit aan om niks te missen!</p>
-      <button class="notif-perm-btn" id="notifPermBtn" onclick="requestNotificationPermission()">
-        🔔 Ja, stuur me meldingen!
-      </button>
-      <p class="notif-status" id="notifStatus"></p>
-    </div>
-
+    <!-- PUSH PERMISSION CARD (Bart only — see bartNotifCard in #bartScreen) -->
     <div class="card">
       <div class="card-title">👤 Wie ben jij?</div>
       <p style="font-size:0.8rem;color:var(--ink2);margin-bottom:20px;line-height:1.7;">
@@ -1205,7 +1196,7 @@ const FUNNY_DECLINES = [
 async function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) return null;
   try {
-    const reg = await navigator.serviceWorker.register('/sw.js?v=2');
+    const reg = await navigator.serviceWorker.register('/sw.js?v=3');
     swRegistration = reg;
     console.log('[PWA] Service Worker registered');
 
